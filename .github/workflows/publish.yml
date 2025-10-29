@@ -1,0 +1,80 @@
+# این یک ورک‌فلو بهینه‌شده برای تست، ساخت و انتشار برنامه روی پلتفرم‌های مختلف است
+
+name: Test, Build and Publish
+
+# این ورک‌فلو در هر پوش به برنچ اصلی یا هر پول رکوئست اجرا می‌شود
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  # --- جاب اول: بررسی کیفیت کد (Linting) ---
+  lint:
+    name: Lint Code
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linter
+        run: npm run lint
+
+  # --- جاب دوم: ساخت و انتشار برنامه برای هر سیستم‌عامل ---
+  build-and-release:
+    name: Build & Release
+    # این جاب تنها در صورتی اجرا می‌شود که جاب lint با موفقیت تمام شود
+    needs: lint
+    
+    # این جاب به صورت موازی روی سه سیستم‌عامل مختلف اجرا می‌شود
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # مرحله ساخت و انتشار
+      # این مرحله فقط زمانی اجرا می‌شود که یک پوش به برنچ main زده شود
+      - name: Build and Publish
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        env:
+          # این توکن برای آپلود فایل‌ها به بخش Releases گیت‌هاب ضروری است
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # مقادیر زیر برای امضای دیجیتال برنامه است که باید در Secrets مخزن تعریف شوند
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_ID_PASS: ${{ secrets.APPLE_ID_PASS }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+        run: |
+          # دستور ساخت بر اساس سیستم‌عامل ماشین مجازی اجرا می‌شود
+          if [ "${{ runner.os }}" == "Linux" ]; then
+            npm exec electron-builder -- --publish always --linux
+          elif [ "${{ runner.os }}" == "Windows" ]; then
+            npm exec electron-builder -- --publish always --win
+          elif [ "${{ runner.os }}" == "macOS" ]; then
+            npm exec electron-builder -- --publish always --mac
+          fi

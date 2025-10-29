@@ -1,0 +1,28 @@
+@import './globals.css';
+@import './window.css';
+@import './tabs.css'; /* <-- این خط اضافه شد */
+
+body {
+  font-family:
+    system-ui,
+    -apple-system,
+    Arial,
+    Helvetica,
+    sans-serif;
+  font-size: 14px;
+  margin: 0;
+  overflow: hidden;
+  direction: rtl; /* <-- جهت راست‌چین بر اساس فایل HTML */
+  font-family: 'Inter', sans-serif; /* <-- فونت Inter بر اساس فایل HTML */
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* اضافه کردن فونت Inter (اگر قبلاً در globals.css نباشد) */
+/* @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'); */
