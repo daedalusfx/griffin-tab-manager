@@ -1,0 +1,81 @@
+name: Build & Release Electron App
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  # این جاب به صورت موازی روی ویندوز و لینوکس اجرا می‌شود
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest] # سیستم‌عامل‌های مورد نظر
+
+    runs-on: ${{ matrix.os }} # اجرا روی هر سیستم‌عامل از ماتریکس
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build Application Source Code
+        run: pnpm run vite:build:app
+
+      # دستور بیلد مخصوص لینوکس
+      - name: Build for Linux
+        if: runner.os == 'Linux' # این مرحله فقط روی لینوکس اجرا می‌شود
+        run: pnpm electron-builder --linux AppImage
+
+      # دستور بیلد مخصوص ویندوز
+      - name: Build for Windows
+        if: runner.os == 'Windows' # این مرحله فقط روی ویندوز اجرا می‌شود
+        run: pnpm electron-builder --win
+
+      # آپلود خروجی‌ها با نامی منحصر به فرد برای هر سیستم‌عامل
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.os }}
+          path: dist/
+
+  # این جاب پس از اتمام موفقیت‌آمیز تمام بیلدهای بالا اجرا می‌شود
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          # ///   تغییر اصلی اینجاست   ///
+          # فقط فایل‌های نصبی و فایل‌های آپدیت را انتخاب می‌کنیم
+          files: |
+            release-assets/**/*.exe
+            release-assets/**/*.msi
+            release-assets/**/*.AppImage
+            release-assets/**/*.deb
+            release-assets/**/*.snap
+            release-assets/**/*.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
