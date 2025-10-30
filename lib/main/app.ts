@@ -47,7 +47,7 @@ export function createAppWindow(): void {
     icon: appIcon,
     frame: true,
     titleBarStyle: 'default',
-    title: 'Griffin Light TradeingView',
+    title: 'Griffin Tab Manager',
     maximizable: true,
     resizable: true,
     webPreferences: {
