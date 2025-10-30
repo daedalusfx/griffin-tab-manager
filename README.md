@@ -35,7 +35,7 @@ This application is built with a modern tech stack and features an advanced, typ
 
 1.  **Clone the repository:**
     ```bash
-    git clone [https://github.com/YOUR_USERNAME/griffin-tab-manager.git](https://github.com/YOUR_USERNAME/griffin-tab-manager.git)
+    git clone [https://github.com/daedalusfx/griffin-tab-manager.git](https://github.com/daedalusfx/griffin-tab-manager.git)
     cd griffin-tab-manager
     ```
 
