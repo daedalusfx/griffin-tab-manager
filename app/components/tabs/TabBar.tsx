@@ -8,11 +8,12 @@ interface TabBarProps {
   setActiveTabs: (tabs: Tab[]) => void
   activeTabId: string | null
   onSetActiveId: (id: string) => void
-  // onAddNewTab حذف شد
   onDeleteTab: (id: string) => void
   onOpenTrash: () => void
-  onOpenChartList: () => void // <-- دکمه جدید
+  onOpenChartList: () => void
   trashCount: number
+  onUpdateTabColor: (id: string, color: string | null) => void 
+  onOpenColorMenu: (props: { tabId: string; position: { x: number; y: number } }) => void
 }
 
 export const TabBar = ({
@@ -22,8 +23,10 @@ export const TabBar = ({
   onSetActiveId,
   onDeleteTab,
   onOpenTrash,
-  onOpenChartList, // <-- جدید
+  onOpenChartList,
   trashCount,
+onUpdateTabColor,
+onOpenColorMenu
 }: TabBarProps) => {
   return (
     <header className="tab-header">
@@ -44,6 +47,8 @@ export const TabBar = ({
                 tab={tab}
                 isActive={tab.id === activeTabId}
                 onSelect={onSetActiveId}
+                onUpdateColor={onUpdateTabColor} 
+                onOpenColorMenu={onOpenColorMenu}
                 onClose={onDeleteTab}
               />
             ))}

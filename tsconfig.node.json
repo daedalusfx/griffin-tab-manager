@@ -2,6 +2,7 @@
   "extends": "@electron-toolkit/tsconfig/tsconfig.node.json",
   "include": ["lib/main/index.d.ts", "electron.vite.config.*", "lib/**/*", "resources/**/*", "app/**/*"],
   "compilerOptions": {
+    "jsx": "react",
     "composite": true,
     "moduleResolution": "bundler",
     "types": ["electron-vite/node"],

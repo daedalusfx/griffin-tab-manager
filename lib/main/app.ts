@@ -59,6 +59,8 @@ export function createAppWindow(): void {
     },
   })
 
+  mainWindow.setMenu(null)
+
   // Register IPC events for the main window.
   registerWindowHandlers(mainWindow)
   registerAppHandlers(app)

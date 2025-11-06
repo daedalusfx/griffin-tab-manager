@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react'
 export interface Tab {
   id: string
   title: string
-  url: string // <-- این فیلد اضافه شد
+  url: string 
+  color?: string | null 
 }
 
 const TABS_KEY = 'desktopTabs_activeTabs'
@@ -81,6 +82,13 @@ export const useTabStore = () => {
     setActiveTabs([...activeTabs, tabToRestore])
     setActiveTabId(tabToRestore.id)
   }
+  const updateTabColor = (tabId: string, color: string | null) => {
+    setActiveTabs((prevTabs) =>
+      prevTabs.map((tab) =>
+        tab.id === tabId ? { ...tab, color: color } : tab,
+      ),
+    )
+  }
 
   const activeTab = activeTabs.find((t) => t.id === activeTabId) || null
 
@@ -90,9 +98,10 @@ export const useTabStore = () => {
     deletedTabs,
     activeTabId,
     setActiveTabId,
-    createTab, // <-- نام تابع تغییر کرد
+    createTab,
     deleteTab,
     restoreTab,
+    updateTabColor,
     activeTab,
   }
 }

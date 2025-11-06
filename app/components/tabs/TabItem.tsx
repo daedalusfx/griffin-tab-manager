@@ -9,6 +9,8 @@ interface TabItemProps {
   isActive: boolean
   onSelect: (id: string) => void
   onClose: (id: string) => void
+  onUpdateColor: (id: string, color: string | null) => void 
+  onOpenColorMenu: (props: { tabId: string; position: { x: number; y: number } }) => void 
 }
 
 // --- کامپوننت‌های استایل‌دار ---
@@ -44,11 +46,11 @@ const CloseButton = styled.button`
   }
 `
 
-const StyledTabItem = styled(Reorder.Item)<{ $isActive: boolean }>`
+const StyledTabItem = styled(Reorder.Item)<{ $isActive: boolean ,$color?: string | any}>`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem 1.25rem;
+  padding: 0.75rem 1rem; 
   cursor: pointer;
   max-width: 16rem;
   flex-shrink: 0;
@@ -62,8 +64,17 @@ const StyledTabItem = styled(Reorder.Item)<{ $isActive: boolean }>`
   margin: 0;
   
   /* یک جداکننده ظریف بین تب‌ها */
-  border-right: 1px solid rgba(255, 255, 255, 0.05); /* یا border-left برای RTL */
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+   /* یا border-left برای RTL */
   
+  border-left: 4px solid transparent;
+  ${(props) =>
+    props.$color &&
+    css`
+      border-left-color: ${props.$color};
+      /* پدینگ داخلی رو تنظیم می‌کنیم تا متن از نوار رنگی فاصله بگیره */
+      padding-left: calc(1rem - 4px); 
+    `}
   /* --- استایل بر اساس Prop --- */
 
   /* ۱. استایل تب غیرفعال */
@@ -102,16 +113,27 @@ const StyledTabItem = styled(Reorder.Item)<{ $isActive: boolean }>`
 
 // --- کامپوننت اصلی ---
 
-export const TabItem = ({ tab, isActive, onSelect, onClose }: TabItemProps) => {
+export const TabItem = ({ tab, isActive, onSelect, onClose,onUpdateColor,onOpenColorMenu }: TabItemProps) => {
   const y = useMotionValue(0)
 
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    // --- به جای استیت محلی، تابع والد رو صدا بزن ---
+    onOpenColorMenu({ tabId: tab.id, position: { x: e.clientX, y: e.clientY } })
+  }
+
   return (
+    <>
     <StyledTabItem
-      $isActive={isActive} // <-- $isActive prop
+      $isActive={isActive}
       value={tab}
+      $color={tab.color} 
       id={tab.id}
       style={{ y }}
       onClick={() => onSelect(tab.id)}
+      onContextMenu={handleContextMenu} 
       
       layout
       exit={{ opacity: 0, transition: { duration: 0.15 } }}
@@ -132,5 +154,6 @@ export const TabItem = ({ tab, isActive, onSelect, onClose }: TabItemProps) => {
 
      </div>
     </StyledTabItem>
+    </>
   )
 }

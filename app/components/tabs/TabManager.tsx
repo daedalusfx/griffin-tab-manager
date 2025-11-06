@@ -6,6 +6,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import useResizeObserver from 'use-resize-observer';
 import { ChartEditorModal } from './ChartEditorModal';
 import { ChartListSidebar } from './ChartListSidebar';
+import { ColorPickerMenu } from './ColorPickerMenu';
 import { TabBar } from './TabBar';
 import { TabContent } from './TabContent';
 import { TrashModal } from './TrashModal';
@@ -20,11 +21,16 @@ export const TabManager = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [editingChart, setEditingChart] = useState<SavedChart | null>(null);
 
+    const [colorMenuProps, setColorMenuProps] = useState<{
+      tabId: string
+      position: { x: number; y: number }
+    } | null>(null)
+
   // --- هوک‌ها ---
   const { viewSetActive, viewSetBounds, viewCreate, viewDestroy } = useConveyor('window'); // (توابع قبلی را هم اضافه کردم)
   const {
     activeTabs, setActiveTabs, deletedTabs, activeTabId, setActiveTabId,
-    createTab, deleteTab, restoreTab,
+    createTab, deleteTab, restoreTab,updateTabColor
   } = useTabStore();
   const { savedCharts, addChart, updateChart, deleteChart } = useChartStore();
 
@@ -69,11 +75,9 @@ export const TabManager = () => {
 
   // --- مدیریت نمایش BrowserView بر اساس مودال‌های تمام‌صفحه ---
   useEffect(() => {
-    const isBlockingModalOpen = isTrashModalOpen || isChartEditorModalOpen;
+    const isBlockingModalOpen = isTrashModalOpen || isChartEditorModalOpen || !!colorMenuProps;
     viewSetActive(isBlockingModalOpen ? null : activeTabId);
-  }, [activeTabId, isTrashModalOpen, isChartEditorModalOpen, viewSetActive]);
-
-  // --- مدیریت ابعاد BrowserView (اصلاح شده) ---
+  }, [activeTabId, isTrashModalOpen, isChartEditorModalOpen, colorMenuProps, viewSetActive]); 
 
   // تابع اصلی ارسال ابعاد
   const sendBounds = useCallback(() => {
@@ -155,6 +159,17 @@ export const TabManager = () => {
     setIsSidebarOpen(!isSidebarOpen);
   }
 
+  const handleSelectColor = (color: string | null) => {
+    if (colorMenuProps) {
+      updateTabColor(colorMenuProps.tabId, color);
+    }
+    setColorMenuProps(null); // بستن منو
+  };
+
+  const handleCloseColorMenu = () => {
+    setColorMenuProps(null);
+  };
+
   return (
     // <div className={cn('tab-manager-container-wrapper', isSidebarOpen && 'sidebar-open')}> // <-- cn حذف شد
     <div className="tab-manager-container-wrapper">
@@ -174,6 +189,8 @@ export const TabManager = () => {
           setActiveTabs={setActiveTabs}
           activeTabId={activeTabId}
           onSetActiveId={setActiveTabId}
+          onUpdateTabColor={updateTabColor}
+          onOpenColorMenu={setColorMenuProps} 
           onDeleteTab={handleDeleteTab} // <-- استفاده از هندلر جدید
           onOpenTrash={() => setIsTrashModalOpen(true)}
           onOpenChartList={handleToggleSidebar} // <-- دکمه نوار تب حالا سایدبار را کنترل می‌کند
@@ -198,6 +215,15 @@ export const TabManager = () => {
         onSubmit={handleEditorSubmit}
         chartToEdit={editingChart}
       />
+
+{colorMenuProps && (
+        <ColorPickerMenu
+          position={colorMenuProps.position}
+          onClose={handleCloseColorMenu}
+          onSelectColor={handleSelectColor}
+        />
+      )}
+
     </div>
   );
 };
