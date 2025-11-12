@@ -11,6 +11,7 @@ import React, {
 } from 'react'
 import useResizeObserver from 'use-resize-observer'
 import { useShallow } from 'zustand/react/shallow'
+import { BulkChartModal } from './BulkChartModal'
 import { ChartEditorModal } from './ChartEditorModal'
 import { ChartListSidebar } from './ChartListSidebar'
 import { ColorPickerMenu } from './ColorPickerMenu'
@@ -36,6 +37,7 @@ export const TabManager = () => {
   const [colorMenuProps, setColorMenuProps] = useState<ColorMenuProps | null>(
     null, //
   )
+  const [isBulkAddModalOpen, setIsBulkAddModalOpen] = useState(false) 
 
   // --- هوک‌های IPC ---
   const { viewSetActive, viewSetBounds, viewCreate, viewDestroy } =
@@ -190,6 +192,15 @@ export const TabManager = () => {
     setColorMenuProps(null)
   } //
 
+
+  const handleBulkEditorSubmit = (charts: Array<{ title: string; url: string }>) => {
+    charts.forEach(chart => {
+      addChart(chart.title, chart.url); //
+    });
+    
+    setIsBulkAddModalOpen(false);
+  };
+
   // --- JSX (بدون تغییر) ---
   return (
     <div className="tab-manager-container-wrapper">
@@ -201,6 +212,7 @@ export const TabManager = () => {
         onEditChart={handleEditChart}
         onDeleteChart={deleteChart}
         onAddNew={handleAddNewChart}
+        onAddNewBulk={() => setIsBulkAddModalOpen(true)}
       />
 
       <div className="tab-manager-main-content">
@@ -233,6 +245,12 @@ export const TabManager = () => {
         onClose={() => setIsChartEditorModalOpen(false)}
         onSubmit={handleEditorSubmit}
         chartToEdit={editingChart}
+      />
+
+     <BulkChartModal
+        isOpen={isBulkAddModalOpen}
+        onClose={() => setIsBulkAddModalOpen(false)}
+        onSubmit={handleBulkEditorSubmit}
       />
 
       {colorMenuProps && (

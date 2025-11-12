@@ -1,14 +1,13 @@
 import { SavedChart } from '@/app/hooks/useChartStore';
-// import { AnimatePresence, motion, Variants } from 'framer-motion'; // <-- حذف شد
 import {
+  CopyPlusIcon,
   Edit2Icon,
-  // PanelLeftCloseIcon, // <-- حذف شد
-  // PanelLeftOpenIcon, // <-- حذف شد
   PlayCircleIcon,
   PlusIcon,
   Trash2Icon,
   XIcon
 } from 'lucide-react';
+import React from 'react';
 import { Button } from '../ui/button';
 
 interface ChartListSidebarProps {
@@ -19,9 +18,9 @@ interface ChartListSidebarProps {
   onEditChart: (chart: SavedChart) => void
   onDeleteChart: (id: string) => void
   onAddNew: () => void
+  onAddNewBulk: () => void 
 }
 
-// const sidebarVariants: Variants = { ... } // <-- حذف شد
 
 export const ChartListSidebar = ({
   isOpen,
@@ -31,6 +30,7 @@ export const ChartListSidebar = ({
   onEditChart,
   onDeleteChart,
   onAddNew,
+  onAddNewBulk
 }: ChartListSidebarProps) => {
   return (
     <>
@@ -115,15 +115,26 @@ export const ChartListSidebar = ({
         </div>
 
         {/* فوتر سایدبار */}
-        <div className="flex justify-start p-4 border-t border-border">
+        <div className="flex items-center justify-start gap-2 p-4 border-t border-border"> 
           <Button
             type="button"
             variant="outline"
             onClick={onAddNew}
-            className="gap-1 w-full"
+            className="gap-1 flex-1"
           >
             <PlusIcon className="w-4 h-4" />
-            افزودن چارت جدید
+            افزودن تکی
+          </Button>
+          
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onAddNewBulk}
+            className="gap-1 flex-1"
+            title="افزودن گروهی از لیست"
+          >
+            <CopyPlusIcon className="w-4 h-4" />
+            افزودن گروهی
           </Button>
         </div>
       </aside>
