@@ -80,12 +80,18 @@ export const registerWindowHandlers = (window: BrowserWindow) => {
   })
 
   handle('view-destroy', (tabId: string) => {
+    console.log(`[Main] 3. Received 'view-destroy' request for: ${tabId}`);
     if (viewMap.has(tabId)) {
       const view = viewMap.get(tabId)
       window.removeBrowserView(view!)
       // @ts-ignore (destroy is not in d.ts but exists)
       view!.webContents.destroy() // آزاد کردن کامل منابع
       viewMap.delete(tabId)
+      console.log(`[Main] 4. Successfully destroyed and removed from viewMap: ${tabId}`);
+    }else{
+
+      console.error(`[Main] Error: tabId ${tabId} was NOT found in viewMap!`);
+
     }
   })
 

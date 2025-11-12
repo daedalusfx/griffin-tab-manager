@@ -150,7 +150,9 @@ export const TabManager = () => {
   } //
 
   const handleDeleteTab = (tabId: string) => {
+    console.log(`[Renderer] 1. Deleting tab from Zustand: ${tabId}`);
     deleteTab(tabId)
+    console.log(`[Renderer] 1. Deleting tab from Zustand: ${tabId}`);
     viewDestroy(tabId)
   } //
 
