@@ -1,177 +1,195 @@
-import { useConveyor } from '@/app/hooks/use-conveyor';
-import { SavedChart, useChartStore } from '@/app/hooks/useChartStore';
-import { useTabStore } from '@/app/hooks/useTabStore';
-import { debounce } from 'lodash-es';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import useResizeObserver from 'use-resize-observer';
-import { ChartEditorModal } from './ChartEditorModal';
-import { ChartListSidebar } from './ChartListSidebar';
-import { ColorPickerMenu } from './ColorPickerMenu';
-import { TabBar } from './TabBar';
-import { TabContent } from './TabContent';
-import { TrashModal } from './TrashModal';
+import { useConveyor } from '@/app/hooks/use-conveyor'
+import { SavedChart, useChartStore } from '@/app/hooks/useChartStore'
+import { useTabStore } from '@/app/hooks/useTabStore'
+import { debounce } from 'lodash-es'
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react'
+import useResizeObserver from 'use-resize-observer'
+import { useShallow } from 'zustand/react/shallow'
+import { ChartEditorModal } from './ChartEditorModal'
+import { ChartListSidebar } from './ChartListSidebar'
+import { ColorPickerMenu } from './ColorPickerMenu'
+import { TabBar } from './TabBar'
+import { TabContent } from './TabContent'
+import { TrashModal } from './TrashModal'
 
 // --- ثابت‌ها ---
-const BOUNDS_DEBOUNCE_MS = 350;
+const BOUNDS_DEBOUNCE_MS = 350
+
+// تعریف تایپ برای منوی انتخاب رنگ
+type ColorMenuProps = {
+  tabId: string
+  position: { x: number; y: number }
+}
 
 export const TabManager = () => {
-  // --- استیت‌ها ---
-  const [isTrashModalOpen, setIsTrashModalOpen] = useState(false);
-  const [isChartEditorModalOpen, setIsChartEditorModalOpen] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [editingChart, setEditingChart] = useState<SavedChart | null>(null);
+  // --- استیت‌های محلی برای مودال‌ها ---
+  const [isTrashModalOpen, setIsTrashModalOpen] = useState(false)
+  const [isChartEditorModalOpen, setIsChartEditorModalOpen] = useState(false)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [editingChart, setEditingChart] = useState<SavedChart | null>(null) //
+  const [colorMenuProps, setColorMenuProps] = useState<ColorMenuProps | null>(
+    null, //
+  )
 
-    const [colorMenuProps, setColorMenuProps] = useState<{
-      tabId: string
-      position: { x: number; y: number }
-    } | null>(null)
+  // --- هوک‌های IPC ---
+  const { viewSetActive, viewSetBounds, viewCreate, viewDestroy } =
+    useConveyor('window') //
 
-  // --- هوک‌ها ---
-  const { viewSetActive, viewSetBounds, viewCreate, viewDestroy } = useConveyor('window'); // (توابع قبلی را هم اضافه کردم)
-  const {
-    activeTabs, setActiveTabs, deletedTabs, activeTabId, setActiveTabId,
-    createTab, deleteTab, restoreTab,updateTabColor
-  } = useTabStore();
-  const { savedCharts, addChart, updateChart, deleteChart } = useChartStore();
+  // --- انتخاب داده‌ها از استور تب (با useShallow) ---
+  // از useShallow استفاده می‌کنیم تا این کامپوننت فقط زمانی رندر شود
+  // که یکی از این سه متغیر واقعاً تغییر کند.
+  const { activeTabs, deletedTabs, activeTabId } = useTabStore(
+    useShallow((state) => ({
+      activeTabs: state.activeTabs,
+      deletedTabs: state.deletedTabs,
+      activeTabId: state.activeTabId,
+    })),
+  )
 
-  // --- رفرنس ---
-  const contentWrapperRef = useRef<HTMLDivElement>(null);
-  const didInitViewsRef = useRef<boolean>(false); 
+  // --- انتخاب اکشن‌ها از استور تب (بدون useShallow) ---
+  // اکشن‌ها توابع ثابت هستند و نیازی به useShallow ندارند.
+  // انتخاب جداگانه آن‌ها بهینه‌ترین حالت است.
+  const setActiveTabs = useTabStore((state) => state.setActiveTabs)
+  const setActiveTabId = useTabStore((state) => state.setActiveTabId)
+  const createTab = useTabStore((state) => state.createTab)
+  const deleteTab = useTabStore((state) => state.deleteTab)
+  const restoreTab = useTabStore((state) => state.restoreTab)
+  const updateTabColor = useTabStore((state) => state.updateTabColor)
 
+  // --- انتخاب داده‌ها از استور چارت (با useShallow) ---
+  const savedCharts = useChartStore(useShallow((state) => state.savedCharts))
 
+  // --- انتخاب اکشن‌ها از استور چارت ---
+  const addChart = useChartStore((state) => state.addChart)
+  const updateChart = useChartStore((state) => state.updateChart)
+  const deleteChart = useChartStore((state) => state.deleteChart)
 
-
+  // --- رفرنس‌ها ---
+  const contentWrapperRef = useRef<HTMLDivElement>(null) //
+  const didInitViewsRef = useRef<boolean>(false) //
 
   useEffect(() => {
-    // این افکت فقط یک بار اجرا می‌شود
     if (activeTabs.length > 0 && !didInitViewsRef.current) {
-      didInitViewsRef.current = true; // پرچم را تنظیم کن که دوباره اجرا نشود
-      
-      console.log('--- Initializing BrowserViews on App Start ---');
-      
+      didInitViewsRef.current = true
+      console.log('--- Initializing BrowserViews on App Start ---')
       const initViews = async () => {
-        // ۱. برای تمام تب‌های موجود، ویو بساز
-        const createPromises = activeTabs.map(tab => {
-          console.log(`Creating view for: ${tab.title} (ID: ${tab.id})`);
-          // تابع viewCreate از قبل در کامپوننت موجود است
-          return viewCreate(tab.id, tab.url); 
-        });
-        
-        // منتظر بمان تا همه ساخته شوند
-        await Promise.all(createPromises);
-        
-        // ۲. ویوی فعال را تنظیم کن
-        // افکت بعدی (مدیریت نمایش BrowserView) این کار را به طور خودکار انجام می‌دهد
-        // چون activeTabId از قبل در استور موجود است.
-        console.log(`Setting active view to: ${activeTabId}`);
-        viewSetActive(activeTabId);
-      };
-
-      initViews();
+        const createPromises = activeTabs.map((tab) => {
+          console.log(`Creating view for: ${tab.title} (ID: ${tab.id})`)
+          return viewCreate(tab.id, tab.url)
+        })
+        await Promise.all(createPromises)
+        console.log(`Setting active view to: ${activeTabId}`)
+        viewSetActive(activeTabId)
+      }
+      initViews()
     }
-  }, [activeTabs, activeTabId, viewCreate, viewSetActive]); // <-- وابستگی‌ها
+  }, [activeTabs, activeTabId, viewCreate, viewSetActive]) //
 
-
-
-  // --- مدیریت نمایش BrowserView بر اساس مودال‌های تمام‌صفحه ---
   useEffect(() => {
-    const isBlockingModalOpen = isTrashModalOpen || isChartEditorModalOpen || !!colorMenuProps;
-    viewSetActive(isBlockingModalOpen ? null : activeTabId);
-  }, [activeTabId, isTrashModalOpen, isChartEditorModalOpen, colorMenuProps, viewSetActive]); 
+    const isBlockingModalOpen =
+      isTrashModalOpen || isChartEditorModalOpen || !!colorMenuProps
+    viewSetActive(isBlockingModalOpen ? null : activeTabId)
+  }, [
+    activeTabId,
+    isTrashModalOpen,
+    isChartEditorModalOpen,
+    colorMenuProps,
+    viewSetActive,
+  ]) //
 
-  // تابع اصلی ارسال ابعاد
+  // --- منطق مدیریت ابعاد (Bounds) (بدون تغییر) ---
   const sendBounds = useCallback(() => {
     if (contentWrapperRef.current) {
-      const rect = contentWrapperRef.current.getBoundingClientRect();
-      if (rect.width < 10 || rect.height < 10) return;
-
-      // const sidebarOffset = isSidebarOpen ? SIDEBAR_WIDTH : 0; // <-- این خط حذف شد
-
+      const rect = contentWrapperRef.current.getBoundingClientRect()
+      if (rect.width < 10 || rect.height < 10) return
       const bounds = {
         x: Math.round(rect.left),
         y: Math.round(rect.top),
-        width: Math.round(rect.width), // <-- آفست از اینجا حذف شد
+        width: Math.round(rect.width),
         height: Math.round(rect.height),
-      };
-
-      viewSetBounds(bounds);
+      }
+      viewSetBounds(bounds)
     }
-  }, [viewSetBounds]); // <-- isSidebarOpen از وابستگی‌ها حذف شد
+  }, [viewSetBounds]) //
 
-  // تابع debounce شده برای ارسال ابعاد
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const debouncedSendBounds = useCallback(debounce(sendBounds, BOUNDS_DEBOUNCE_MS), [sendBounds]);
+  const debouncedSendBounds = useCallback(
+    debounce(sendBounds, BOUNDS_DEBOUNCE_MS),
+    [sendBounds],
+  ) //
 
-  // ارسال ابعاد اولیه و هنگام تغییر تب فعال (بدون debounce)
   useLayoutEffect(() => {
-    sendBounds();
-  }, [activeTabId, sendBounds]);
+    sendBounds()
+  }, [activeTabId, sendBounds]) //
 
-  // نظارت بر تغییر اندازه پنجره (با debounce)
   useResizeObserver({
     ref: contentWrapperRef,
     onResize: debouncedSendBounds,
-  });
+  }) //
 
-  // ارسال ابعاد هنگام باز/بسته شدن سایدبار (با debounce)
-  // این افکت مهم است چون flexbox اندازه را تغییر می‌دهد
   useEffect(() => {
-    debouncedSendBounds();
+    debouncedSendBounds()
     return () => {
-      debouncedSendBounds.cancel();
-    };
-  }, [isSidebarOpen, debouncedSendBounds]);
-
-  // --- توابع هندلر (اصلاح شده) ---
-  const handleOpenChart = (title: string, url: string) => {
-    const newTab = createTab(title, url, true);
-    if (newTab) {
-      viewCreate(newTab.id, newTab.url);
+      debouncedSendBounds.cancel()
     }
-    setIsSidebarOpen(false);
-  };
+  }, [isSidebarOpen, debouncedSendBounds]) //
+
+  // --- توابع هندلر (بدون تغییر در منطق، فقط از اکشن‌های Zustand استفاده می‌کنند) ---
+  const handleOpenChart = (title: string, url: string) => {
+    const newTab = createTab(title, url, true)
+    if (newTab) {
+      viewCreate(newTab.id, newTab.url)
+    }
+    setIsSidebarOpen(false)
+  } //
 
   const handleDeleteTab = (tabId: string) => {
-    deleteTab(tabId);
-    viewDestroy(tabId);
-  };
+    deleteTab(tabId)
+    viewDestroy(tabId)
+  } //
 
   const handleAddNewChart = () => {
-    setEditingChart(null);
-    setIsChartEditorModalOpen(true);
-  };
+    setEditingChart(null)
+    setIsChartEditorModalOpen(true)
+  } //
 
   const handleEditChart = (chart: SavedChart) => {
-    setEditingChart(chart);
-    setIsChartEditorModalOpen(true);
-  };
+    setEditingChart(chart)
+    setIsChartEditorModalOpen(true)
+  } //
 
   const handleEditorSubmit = (title: string, url: string) => {
     if (editingChart) {
-      updateChart(editingChart.id, title, url);
+      updateChart(editingChart.id, title, url)
     } else {
-      addChart(title, url);
+      addChart(title, url)
     }
-    setIsChartEditorModalOpen(false);
-  };
+    setIsChartEditorModalOpen(false)
+  } //
 
   const handleToggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  }
+    setIsSidebarOpen(!isSidebarOpen)
+  } //
 
   const handleSelectColor = (color: string | null) => {
     if (colorMenuProps) {
-      updateTabColor(colorMenuProps.tabId, color);
+      updateTabColor(colorMenuProps.tabId, color)
     }
-    setColorMenuProps(null); // بستن منو
-  };
+    setColorMenuProps(null)
+  } //
 
   const handleCloseColorMenu = () => {
-    setColorMenuProps(null);
-  };
+    setColorMenuProps(null)
+  } //
 
+  // --- JSX (بدون تغییر) ---
   return (
-    // <div className={cn('tab-manager-container-wrapper', isSidebarOpen && 'sidebar-open')}> // <-- cn حذف شد
     <div className="tab-manager-container-wrapper">
       <ChartListSidebar
         isOpen={isSidebarOpen}
@@ -190,10 +208,10 @@ export const TabManager = () => {
           activeTabId={activeTabId}
           onSetActiveId={setActiveTabId}
           onUpdateTabColor={updateTabColor}
-          onOpenColorMenu={setColorMenuProps} 
-          onDeleteTab={handleDeleteTab} // <-- استفاده از هندلر جدید
+          onOpenColorMenu={setColorMenuProps}
+          onDeleteTab={handleDeleteTab}
           onOpenTrash={() => setIsTrashModalOpen(true)}
-          onOpenChartList={handleToggleSidebar} // <-- دکمه نوار تب حالا سایدبار را کنترل می‌کند
+          onOpenChartList={handleToggleSidebar}
           trashCount={deletedTabs.length}
         />
 
@@ -202,7 +220,6 @@ export const TabManager = () => {
         </div>
       </div>
 
-      {/* مودال‌ها */}
       <TrashModal
         isOpen={isTrashModalOpen}
         onClose={() => setIsTrashModalOpen(false)}
@@ -216,14 +233,13 @@ export const TabManager = () => {
         chartToEdit={editingChart}
       />
 
-{colorMenuProps && (
+      {colorMenuProps && (
         <ColorPickerMenu
           position={colorMenuProps.position}
           onClose={handleCloseColorMenu}
           onSelectColor={handleSelectColor}
         />
       )}
-
     </div>
-  );
-};
+  )
+}

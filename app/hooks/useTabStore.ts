@@ -1,107 +1,152 @@
-import { useEffect, useState } from 'react'
+import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 
+/**
+ * اینترفیس تب
+ */
 export interface Tab {
   id: string
   title: string
-  url: string 
-  color?: string | null 
+  url: string
+  color?: string | null
 }
 
-const TABS_KEY = 'desktopTabs_activeTabs'
-const TRASH_KEY = 'desktopTabs_deletedTabs'
-const ACTIVE_TAB_KEY = 'desktopTabs_activeTabId'
-
-export const useTabStore = () => {
-  const [activeTabs, setActiveTabs] = useState<Tab[]>(() => {
-    return JSON.parse(localStorage.getItem(TABS_KEY) || '[]')
-  })
-
-  const [deletedTabs, setDeletedTabs] = useState<Tab[]>(() => {
-    return JSON.parse(localStorage.getItem(TRASH_KEY) || '[]')
-  })
-
-  const [activeTabId, setActiveTabId] = useState<string | null>(() => {
-    return localStorage.getItem(ACTIVE_TAB_KEY) || null
-  })
-
-  // افکت برای ذخیره تب‌های فعال
-  useEffect(() => {
-    localStorage.setItem(TABS_KEY, JSON.stringify(activeTabs))
-    // اگر تب فعال حذف شد، اولین تب را فعال کن
-    if (activeTabs.length > 0 && !activeTabs.find((t) => t.id === activeTabId)) {
-      setActiveTabId(activeTabs[0].id)
-    } else if (activeTabs.length === 0) {
-      setActiveTabId(null)
-    }
-  }, [activeTabs, activeTabId])
-
-  // افکت برای ذخیره تب‌های حذف‌شده
-  useEffect(() => {
-    localStorage.setItem(TRASH_KEY, JSON.stringify(deletedTabs))
-  }, [deletedTabs])
-
-  // افکت برای ذخیره تب فعال
-  useEffect(() => {
-    if (activeTabId) {
-      localStorage.setItem(ACTIVE_TAB_KEY, activeTabId)
-    } else {
-      localStorage.removeItem(ACTIVE_TAB_KEY)
-    }
-  }, [activeTabId])
-
-  const createTab = (
-    title: string,
-    url: string,
-    activate: boolean = false,
-  ): Tab => { // ۱. نوع بازگشتی را به Tab تغییر دهید
-    const newTab: Tab = {
-      id: window.crypto.randomUUID(),
-      title: title || `تب ${activeTabs.length + 1}`,
-      url: url,
-    }
-    setActiveTabs((prevTabs) => [...prevTabs, newTab])
-    if (activate) {
-      setActiveTabId(newTab.id)
-    }
-    return newTab // ۲. تب جدید را برگردانید
-  }
-
-  const deleteTab = (tabId: string) => {
-    const tabToDelete = activeTabs.find((t) => t.id === tabId)
-    if (!tabToDelete) return
-
-    setActiveTabs(activeTabs.filter((t) => t.id !== tabId))
-    setDeletedTabs([...deletedTabs, tabToDelete])
-  }
-
-  const restoreTab = (tabId: string) => {
-    const tabToRestore = deletedTabs.find((t) => t.id === tabId)
-    if (!tabToRestore) return
-
-    setDeletedTabs(deletedTabs.filter((t) => t.id !== tabId))
-    setActiveTabs([...activeTabs, tabToRestore])
-    setActiveTabId(tabToRestore.id)
-  }
-  const updateTabColor = (tabId: string, color: string | null) => {
-    setActiveTabs((prevTabs) =>
-      prevTabs.map((tab) =>
-        tab.id === tabId ? { ...tab, color: color } : tab,
-      ),
-    )
-  }
-
-  const activeTab = activeTabs.find((t) => t.id === activeTabId) || null
-
-  return {
-    activeTabs,
-    setActiveTabs,
-    deletedTabs,
-    activeTabId,
-    setActiveTabId,
-    createTab,
-    deleteTab,
-    restoreTab,
-    updateTabColor,
-    activeTab,
-  }
+/**
+ * اینترفیس کامل استور تب‌ها
+ * شامل داده‌ها و اکشن‌ها
+ */
+interface TabStoreState {
+  activeTabs: Tab[]
+  deletedTabs: Tab[]
+  activeTabId: string | null
+  // اکشن‌ها
+  setActiveTabs: (tabs: Tab[]) => void
+  setActiveTabId: (id: string | null) => void
+  createTab: (title: string, url: string, activate?: boolean) => Tab
+  deleteTab: (tabId: string) => void
+  restoreTab: (tabId: string) => void
+  updateTabColor: (tabId: string, color: string | null) => void
 }
+
+// یک نام واحد برای ذخیره‌سازی کل استور تب‌ها در localStorage
+const TABS_KEY = 'desktopTabs_store'
+
+/**
+ * هوک Zustand برای مدیریت تب‌ها
+ */
+export const useTabStore = create<TabStoreState>()(
+  persist(
+    (set) => ({
+      // --- حالت اولیه (State) ---
+      activeTabs: [],
+      deletedTabs: [],
+      activeTabId: null,
+
+      // --- اکشن‌ها (Actions) ---
+
+      /**
+       * برای جابجایی تب‌ها (Drag & Drop) استفاده می‌شود
+       * همچنین منطق انتخاب تب جدید (اگر تب فعال حذف شده) را مدیریت می‌کند
+       */
+      setActiveTabs: (tabs) => {
+        set((state) => {
+          const currentActiveId = state.activeTabId
+          let newActiveId = currentActiveId
+
+          // منطق حیاتی که قبلاً در useEffect بود:
+          if (tabs.length > 0 && !tabs.find((t) => t.id === currentActiveId)) {
+            newActiveId = tabs[0].id //
+          } else if (tabs.length === 0) {
+            newActiveId = null //
+          }
+
+          return { activeTabs: tabs, activeTabId: newActiveId }
+        })
+      },
+
+      setActiveTabId: (id) => set({ activeTabId: id }),
+
+      /**
+       * یک تب جدید ایجاد می‌کند
+       */
+      createTab: (title, url, activate = false) => {
+        const newTab: Tab = {
+          id: window.crypto.randomUUID(), //
+          title: title || `تب جدید`,
+          url: url,
+        }
+
+        set((state) => ({
+          activeTabs: [...state.activeTabs, newTab],
+        }))
+
+        if (activate) {
+          set({ activeTabId: newTab.id }) //
+        }
+        return newTab //
+      },
+
+      /**
+       * یک تب را حذف و به سطل زباله منتقل می‌کند
+       * همچنین منطق انتخاب تب فعال جدید را مدیریت می‌کند
+       */
+      deleteTab: (tabId) => {
+        set((state) => {
+          const tabToDelete = state.activeTabs.find((t) => t.id === tabId)
+          if (!tabToDelete) return state // اگر تب وجود نداشت، کاری نکن
+
+          const newActiveTabs = state.activeTabs.filter((t) => t.id !== tabId)
+          let newActiveId = state.activeTabId
+
+          // منطق حیاتی که قبلاً در useEffect بود:
+          // اگر تبی که حذف شد، تب فعال بود، یک تب جدید را فعال کن
+          if (state.activeTabId === tabId) {
+            newActiveId = newActiveTabs.length > 0 ? newActiveTabs[0].id : null //
+          }
+
+          return {
+            activeTabs: newActiveTabs,
+            deletedTabs: [...state.deletedTabs, tabToDelete], //
+            activeTabId: newActiveId,
+          }
+        })
+      },
+
+      /**
+       * یک تب را از سطل زباله بازیابی می‌کند
+       */
+      restoreTab: (tabId) => {
+        set((state) => {
+          const tabToRestore = state.deletedTabs.find((t) => t.id === tabId)
+          if (!tabToRestore) return state //
+
+          return {
+            deletedTabs: state.deletedTabs.filter((t) => t.id !== tabId), //
+            activeTabs: [...state.activeTabs, tabToRestore], //
+            activeTabId: tabToRestore.id, // تب بازیابی شده، فعال می‌شود
+          }
+        })
+      },
+
+      /**
+       * رنگ یک تب را آپدیت می‌کند
+       */
+      updateTabColor: (tabId, color) => {
+        set((state) => ({
+          activeTabs: state.activeTabs.map((tab) =>
+            tab.id === tabId ? { ...tab, color: color } : tab, //
+          ),
+        }))
+      },
+    }),
+    {
+      name: TABS_KEY,
+      // فقط این سه متغیر در localStorage ذخیره شوند
+      partialize: (state) => ({
+        activeTabs: state.activeTabs,
+        deletedTabs: state.deletedTabs,
+        activeTabId: state.activeTabId,
+      }),
+    },
+  ),
+)
