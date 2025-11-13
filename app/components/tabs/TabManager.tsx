@@ -94,6 +94,7 @@ export const TabManager = () => {
   }, [activeTabs, activeTabId, viewCreate, viewSetActive]) //
 
   useEffect(() => {
+    if (!didInitViewsRef.current) return
     const isBlockingModalOpen =
       isTrashModalOpen || isChartEditorModalOpen || !!colorMenuProps
     viewSetActive(isBlockingModalOpen ? null : activeTabId)
@@ -143,14 +144,21 @@ export const TabManager = () => {
   }, [isSidebarOpen, debouncedSendBounds]) //
 
   // --- توابع هندلر (بدون تغییر در منطق، فقط از اکشن‌های Zustand استفاده می‌کنند) ---
-  const handleOpenChart = (title: string, url: string) => {
-    const newTab = createTab(title, url, true)
+
+
+  const handleOpenChart = async (title: string, url: string) => {
+    // ۱. تب ساخته می‌شود اما فعال نمی‌شود (activate = false)
+    const newTab = createTab(title, url, false) 
+    
     if (newTab) {
-      viewCreate(newTab.id, newTab.url)
+      // ۲. منتظر می‌مانیم تا BrowserView ساخته شود
+      await viewCreate(newTab.id, newTab.url)
+      // ۳. حالا تب را فعال می‌کنیم
+      setActiveTabId(newTab.id)
     }
     setIsSidebarOpen(false)
-  } //
-
+  }
+  
   const handleDeleteTab = (tabId: string) => {
     console.log(`[Renderer] 1. Deleting tab from Zustand: ${tabId}`);
     deleteTab(tabId)

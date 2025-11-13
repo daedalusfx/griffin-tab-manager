@@ -47,15 +47,12 @@ export const registerWindowHandlers = (window: BrowserWindow) => {
       },
     })
     
-    // User Agent را تنظیم می‌کنیم
-    // view.webContents.setUserAgent(CHROME_USER_AGENT) // <-- استفاده از متغیر
     
-    window.addBrowserView(view)
+    // window.addBrowserView(view)
     view.setBounds(currentBounds)
     view.webContents.loadURL(url)
 
-    // view.webContents.openDevTools({ mode: 'detach' })
-
+    
     viewMap.set(tabId, view)
   })
 
