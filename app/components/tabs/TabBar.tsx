@@ -1,6 +1,7 @@
 import { Tab } from '@/app/hooks/useTabStore';
 import { AnimatePresence, motion, Reorder } from 'framer-motion';
-import { ListIcon, TrashIcon } from 'lucide-react'; // <-- آیکون‌ها از Lucide
+import { ListIcon, PaintBucketIcon, TrashIcon } from 'lucide-react';
+import React from 'react';
 import { TabItem } from './TabItem';
 
 interface TabBarProps {
@@ -14,6 +15,7 @@ interface TabBarProps {
   trashCount: number
   onUpdateTabColor: (id: string, color: string | null) => void 
   onOpenColorMenu: (props: { tabId: string; position: { x: number; y: number } }) => void
+  onSortTabs: () => void
 }
 
 export const TabBar = ({
@@ -26,7 +28,8 @@ export const TabBar = ({
   onOpenChartList,
   trashCount,
 onUpdateTabColor,
-onOpenColorMenu
+onOpenColorMenu,
+onSortTabs
 }: TabBarProps) => {
   return (
     <header className="tab-header">
@@ -66,6 +69,14 @@ onOpenColorMenu
           onClick={onOpenChartList}
         >
           <ListIcon className="w-5 h-5" />
+        </button>
+
+        <button
+          className="tab-icon-btn"
+          title="مرتب‌سازی بر اساس رنگ"
+          onClick={onSortTabs}
+        >
+          <PaintBucketIcon className="w-5 h-5" />
         </button>
 
         <button

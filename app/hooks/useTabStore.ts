@@ -26,6 +26,7 @@ interface TabStoreState {
   deleteTab: (tabId: string) => void
   restoreTab: (tabId: string) => void
   updateTabColor: (tabId: string, color: string | null) => void
+  sortTabsByColor: () => void 
 }
 
 // یک نام واحد برای ذخیره‌سازی کل استور تب‌ها در localStorage
@@ -137,6 +138,22 @@ export const useTabStore = create<TabStoreState>()(
             tab.id === tabId ? { ...tab, color: color } : tab, //
           ),
         }))
+      },
+
+      sortTabsByColor: () => {
+        set((state) => {
+          const sortedTabs = [...state.activeTabs].sort((a, b) => {
+            // اگر رنگ نداشت، بفرستش ته لیست (با یه استرینگ بزرگ مثل zzz)
+            const colorA = a.color || 'zzzzzz'
+            const colorB = b.color || 'zzzzzz'
+            
+            // مقایسه الفبایی رنگ‌ها (Hex Code)
+            // این باعث میشه رنگ‌های یکسان کنار هم بیفتن
+            return colorA.localeCompare(colorB)
+          })
+
+          return { activeTabs: sortedTabs }
+        })
       },
     }),
     {

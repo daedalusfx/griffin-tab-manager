@@ -38,6 +38,7 @@ export const TabManager = () => {
     null, //
   )
   const [isBulkAddModalOpen, setIsBulkAddModalOpen] = useState(false) 
+  const sortTabsByColor = useTabStore((state) => state.sortTabsByColor)
 
   // --- هوک‌های IPC ---
   const { viewSetActive, viewSetBounds, viewCreate, viewDestroy } =
@@ -235,6 +236,7 @@ export const TabManager = () => {
           onOpenTrash={() => setIsTrashModalOpen(true)}
           onOpenChartList={handleToggleSidebar}
           trashCount={deletedTabs.length}
+          onSortTabs={sortTabsByColor}
         />
 
         <div className="tab-content-wrapper" ref={contentWrapperRef}>
