@@ -1,7 +1,7 @@
 import { Tab, useTabStore } from '@/app/hooks/useTabStore'
-import { ActivityIcon, PlusIcon } from 'lucide-react'
-import React, { useCallback, useMemo } from 'react'
-import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'; // ایمپورت صحیح
+import { ActivityIcon, PlayCircleIcon, PlusIcon } from 'lucide-react'; // PlayCircleIcon اضافه شد
+import React, { useCallback, useEffect, useMemo, useState } from 'react'; // useState و useEffect اضافه شدند
+import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
 
 // --- تنظیمات ثابت ---
 const REAL_USER_AGENT =
@@ -25,6 +25,14 @@ const Slot = React.memo(({ index, currentChartId, availableCharts, onSelect }: S
     () => availableCharts.find((t) => t.id === currentChartId),
     [availableCharts, currentChartId]
   )
+
+  // ۱. استیت برای کنترل اینکه آیا دکمه لود زده شده یا نه
+  const [isLoaded, setIsLoaded] = useState(false)
+
+  // ۲. هر وقت چارت عوض شد، وضعیت لود رو ریست کن تا دکمه دوباره بیاد
+  useEffect(() => {
+    setIsLoaded(false)
+  }, [currentChartId])
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     onSelect(index, e.target.value || null)
@@ -58,18 +66,34 @@ const Slot = React.memo(({ index, currentChartId, availableCharts, onSelect }: S
         </div>
       </div>
 
-      {/* بدنه اسلات (WebView) */}
+      {/* بدنه اسلات */}
       <div className="flex-1 relative w-full h-full bg-card/20">
         {selectedChart ? (
-          <webview
-            src={selectedChart.url}
-            className="w-full h-full"
-            partition="persist:main"
-            useragent={REAL_USER_AGENT}
-            webpreferences="contextIsolation=no, sandbox=no, nodeIntegration=no, nativeWindowOpen=yes"
-            allowpopups={true}
-            style={{ width: '100%', height: '100%', display: 'flex' }}
-          />
+          // ۳. اگر لود شده بود وب‌ویو رو نشون بده، اگر نه دکمه لود رو
+          isLoaded ? (
+            <webview
+              src={selectedChart.url}
+              className="w-full h-full"
+              partition="persist:main"
+              useragent={REAL_USER_AGENT}
+              webpreferences="contextIsolation=no, sandbox=no, nodeIntegration=no, nativeWindowOpen=yes"
+              allowpopups={true}
+              style={{ width: '100%', height: '100%', display: 'flex' }}
+            />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center gap-3 select-none">
+                <span className="text-muted-foreground text-sm font-medium opacity-70">
+                    {selectedChart.title}
+                </span>
+                <button 
+                    onClick={() => setIsLoaded(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-all shadow-sm active:scale-95"
+                >
+                    <PlayCircleIcon className="w-4 h-4" />
+                    <span className="text-xs font-bold">بارگذاری چارت</span>
+                </button>
+            </div>
+          )
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground/30 select-none">
             <div className="p-4 rounded-full bg-muted/30 mb-3">
@@ -85,7 +109,7 @@ const Slot = React.memo(({ index, currentChartId, availableCharts, onSelect }: S
 
 Slot.displayName = 'Slot'
 
-// --- کامپوننت اصلی ---
+// --- کامپوننت اصلی (بدون تغییر) ---
 export const MultiViewGrid = ({ currentTab, allTabs }: MultiViewGridProps) => {
   const updateTabGridSlots = useTabStore((state) => state.updateTabGridSlots)
 
@@ -108,11 +132,7 @@ export const MultiViewGrid = ({ currentTab, allTabs }: MultiViewGridProps) => {
 
   return (
     <div className="w-full h-full p-1 bg-background select-none" dir="ltr">
-      {/* نکته: id پنل‌ها برای ذخیره شدن صحیح موقعیت (autoSaveId) ضروری هستند.
-      */}
       <PanelGroup direction="horizontal" autoSaveId={`grid-h-${currentTab.id}`}>
-        
-        {/* پنل چپ */}
         <Panel id="left-main" defaultSize={60} minSize={20}>
           <Slot
             index={0}
@@ -126,10 +146,8 @@ export const MultiViewGrid = ({ currentTab, allTabs }: MultiViewGridProps) => {
             <div className="w-0.5 h-8 bg-muted-foreground/20 group-hover:bg-primary-foreground/50 rounded-full" />
         </PanelResizeHandle>
 
-        {/* پنل راست (دو تکه) */}
         <Panel id="right-main" defaultSize={40} minSize={20}>
           <PanelGroup direction="vertical" autoSaveId={`grid-v-${currentTab.id}`}>
-            
             <Panel id="right-top" defaultSize={50} minSize={20}>
               <Slot
                 index={1}
@@ -151,10 +169,8 @@ export const MultiViewGrid = ({ currentTab, allTabs }: MultiViewGridProps) => {
                 onSelect={handleSlotChange}
               />
             </Panel>
-
           </PanelGroup>
         </Panel>
-
       </PanelGroup>
     </div>
   )
