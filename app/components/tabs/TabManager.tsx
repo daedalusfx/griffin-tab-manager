@@ -15,6 +15,7 @@ import { BulkChartModal } from './BulkChartModal'
 import { ChartEditorModal } from './ChartEditorModal'
 import { ChartListSidebar } from './ChartListSidebar'
 import { ColorPickerMenu } from './ColorPickerMenu'
+import { MultiViewGrid } from './MultiViewGrid'
 import { TabBar } from './TabBar'
 import { TabContent } from './TabContent'
 import { TrashModal } from './TrashModal'
@@ -39,6 +40,10 @@ export const TabManager = () => {
   )
   const [isBulkAddModalOpen, setIsBulkAddModalOpen] = useState(false) 
   const sortTabsByColor = useTabStore((state) => state.sortTabsByColor)
+
+
+  const isMultiViewOpen = useTabStore((state) => state.isMultiViewOpen)
+  const toggleMultiView = useTabStore((state) => state.toggleMultiView)
 
   // --- هوک‌های IPC ---
   const { viewSetActive, viewSetBounds, viewCreate, viewDestroy } =
@@ -80,33 +85,52 @@ export const TabManager = () => {
   useEffect(() => {
     if (activeTabs.length > 0 && !didInitViewsRef.current) {
       didInitViewsRef.current = true
-      console.log('--- Initializing BrowserViews on App Start ---')
+      console.log('--- Initializing BrowserViews ---')
       const initViews = async () => {
-        const createPromises = activeTabs.map((tab) => {
-          console.log(`Creating view for: ${tab.title} (ID: ${tab.id})`)
+        // فقط برای تب‌های نرمال ویو بساز
+        const normalTabs = activeTabs.filter(t => t.type !== 'multiview')
+        
+        const createPromises = normalTabs.map((tab) => {
           return viewCreate(tab.id, tab.url)
         })
         await Promise.all(createPromises)
-        console.log(`Setting active view to: ${activeTabId}`)
-        viewSetActive(activeTabId)
+        
+        // اگر تب اولیه مولتی‌ویو نبود، فعالش کن
+        const initialTab = activeTabs.find(t => t.id === activeTabId)
+        if (initialTab?.type !== 'multiview') {
+             viewSetActive(activeTabId)
+        }
       }
       initViews()
     }
-  }, [activeTabs, activeTabId, viewCreate, viewSetActive]) //
+  }, []) // وابستگی‌ها را خالی گذاشتم تا فقط یکبار اجرا شود (یا با دقت مدیریت کنید)
 
   useEffect(() => {
     if (!didInitViewsRef.current) return
-    const isBlockingModalOpen =
-      isTrashModalOpen || isChartEditorModalOpen || !!colorMenuProps
-    viewSetActive(isBlockingModalOpen ? null : activeTabId)
+
+    // تب فعال فعلی را پیدا کن
+    const currentTab = activeTabs.find(t => t.id === activeTabId)
+    
+    // آیا تب فعال یک تب مولتی‌ویو است؟
+    const isMultiViewTab = currentTab?.type === 'multiview'
+
+    const shouldHideMainView =
+      isTrashModalOpen ||
+      isChartEditorModalOpen ||
+      !!colorMenuProps ||
+      isBulkAddModalOpen ||
+      isMultiViewTab 
+
+    viewSetActive(shouldHideMainView ? null : activeTabId)
   }, [
     activeTabId,
+    activeTabs,
     isTrashModalOpen,
     isChartEditorModalOpen,
     colorMenuProps,
+    isBulkAddModalOpen,
     viewSetActive,
-  ]) //
-
+  ])
   // --- منطق مدیریت ابعاد (Bounds) (بدون تغییر) ---
   const sendBounds = useCallback(() => {
     if (contentWrapperRef.current) {
@@ -146,6 +170,12 @@ export const TabManager = () => {
 
   // --- توابع هندلر (بدون تغییر در منطق، فقط از اکشن‌های Zustand استفاده می‌کنند) ---
 
+  const handleOpenMultiView = () => {
+    // ایجاد تب جدید با تایپ 'multiview'
+    // نیازی به صدا زدن viewCreate برای این تب نیست چون از <webview> استفاده می‌کند
+    createTab('داشبورد جدید', '', true, 'multiview')
+    setIsSidebarOpen(false)
+  }
 
   const handleOpenChart = async (title: string, url: string) => {
     // ۱. تب ساخته می‌شود اما فعال نمی‌شود (activate = false)
@@ -210,7 +240,9 @@ export const TabManager = () => {
     setIsBulkAddModalOpen(false);
   };
 
-  // --- JSX (بدون تغییر) ---
+  // پیدا کردن آبجکت تب فعال برای رندر
+  const activeTabObj = activeTabs.find(t => t.id === activeTabId)
+
   return (
     <div className="tab-manager-container-wrapper">
       <ChartListSidebar
@@ -237,10 +269,21 @@ export const TabManager = () => {
           onOpenChartList={handleToggleSidebar}
           trashCount={deletedTabs.length}
           onSortTabs={sortTabsByColor}
+          onToggleMultiView={toggleMultiView} 
+          isMultiViewActive={isMultiViewOpen}
+          onOpenMultiView={handleOpenMultiView}
         />
 
         <div className="tab-content-wrapper" ref={contentWrapperRef}>
-          <TabContent activeTabs={activeTabs} activeTabId={activeTabId} />
+
+        {activeTabObj?.type === 'multiview' ? (
+            <MultiViewGrid 
+              currentTab={activeTabObj} 
+              allTabs={activeTabs} 
+            />
+          ) : (
+            <TabContent activeTabs={activeTabs} activeTabId={activeTabId} />
+          )}
         </div>
       </div>
 
