@@ -9,6 +9,9 @@ export interface Tab {
   title: string
   url: string
   color?: string | null
+
+  type?: 'normal' | 'multiview'
+  gridSlots?: (string | null)[]
 }
 
 /**
@@ -19,14 +22,19 @@ interface TabStoreState {
   activeTabs: Tab[]
   deletedTabs: Tab[]
   activeTabId: string | null
+  isMultiViewOpen: boolean
+  multiViewSlots: (string | null)[] 
   // اکشن‌ها
   setActiveTabs: (tabs: Tab[]) => void
   setActiveTabId: (id: string | null) => void
-  createTab: (title: string, url: string, activate?: boolean) => Tab
+  createTab: (title: string, url: string, activate?: boolean , type?: 'normal' | 'multiview') => Tab | undefined
   deleteTab: (tabId: string) => void
   restoreTab: (tabId: string) => void
   updateTabColor: (tabId: string, color: string | null) => void
   sortTabsByColor: () => void 
+  toggleMultiView: () => void
+  setMultiViewSlot: (index: number, tabId: string | null) => void
+  updateTabGridSlots: (tabId: string, slots: (string | null)[]) => void
 }
 
 // یک نام واحد برای ذخیره‌سازی کل استور تب‌ها در localStorage
@@ -43,12 +51,17 @@ export const useTabStore = create<TabStoreState>()(
       deletedTabs: [],
       activeTabId: null,
 
-      // --- اکشن‌ها (Actions) ---
+      isMultiViewOpen: false,
+      multiViewSlots: [null, null, null], 
 
-      /**
-       * برای جابجایی تب‌ها (Drag & Drop) استفاده می‌شود
-       * همچنین منطق انتخاب تب جدید (اگر تب فعال حذف شده) را مدیریت می‌کند
-       */
+      toggleMultiView: () => set((state) => ({ isMultiViewOpen: !state.isMultiViewOpen })),
+      
+      setMultiViewSlot: (index, tabId) => set((state) => {
+        const newSlots = [...state.multiViewSlots]
+        newSlots[index] = tabId
+        return { multiViewSlots: newSlots }
+      }),
+
       setActiveTabs: (tabs) => {
         set((state) => {
           const currentActiveId = state.activeTabId
@@ -70,11 +83,14 @@ export const useTabStore = create<TabStoreState>()(
       /**
        * یک تب جدید ایجاد می‌کند
        */
-      createTab: (title, url, activate = false) => {
+      createTab: (title, url, activate = false, type = 'normal') => {
         const newTab: Tab = {
-          id: window.crypto.randomUUID(), //
-          title: title || `تب جدید`,
+          id: window.crypto.randomUUID(),
+          title: title || (type === 'multiview' ? 'داشبورد' : 'تب جدید'),
           url: url,
+          type: type,
+          // اگر مولتی ویو بود، ۳ اسلات خالی براش بساز
+          gridSlots: type === 'multiview' ? [null, null, null] : undefined 
         }
 
         set((state) => ({
@@ -82,11 +98,18 @@ export const useTabStore = create<TabStoreState>()(
         }))
 
         if (activate) {
-          set({ activeTabId: newTab.id }) //
+          set({ activeTabId: newTab.id })
         }
-        return newTab //
+        return newTab
       },
 
+      updateTabGridSlots: (tabId, slots) => {
+        set((state) => ({
+          activeTabs: state.activeTabs.map((tab) =>
+            tab.id === tabId ? { ...tab, gridSlots: slots } : tab
+          ),
+        }))
+      },
       /**
        * یک تب را حذف و به سطل زباله منتقل می‌کند
        * همچنین منطق انتخاب تب فعال جدید را مدیریت می‌کند
@@ -163,6 +186,7 @@ export const useTabStore = create<TabStoreState>()(
         activeTabs: state.activeTabs,
         deletedTabs: state.deletedTabs,
         activeTabId: state.activeTabId,
+        multiViewSlots: state.multiViewSlots
       }),
     },
   ),

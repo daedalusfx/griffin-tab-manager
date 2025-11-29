@@ -1,11 +1,12 @@
 import { Tab } from '@/app/hooks/useTabStore';
 import { AnimatePresence, motion, Reorder } from 'framer-motion';
-import { ListIcon, PaintBucketIcon, TrashIcon } from 'lucide-react';
+import { LayoutDashboard, ListIcon, PaintBucketIcon, TrashIcon } from 'lucide-react';
 import React from 'react';
 import { TabItem } from './TabItem';
 
 interface TabBarProps {
   activeTabs: Tab[]
+  isMultiViewActive: boolean
   setActiveTabs: (tabs: Tab[]) => void
   activeTabId: string | null
   onSetActiveId: (id: string) => void
@@ -16,6 +17,8 @@ interface TabBarProps {
   onUpdateTabColor: (id: string, color: string | null) => void 
   onOpenColorMenu: (props: { tabId: string; position: { x: number; y: number } }) => void
   onSortTabs: () => void
+  onToggleMultiView: () => void
+  onOpenMultiView: () => void
 }
 
 export const TabBar = ({
@@ -29,7 +32,10 @@ export const TabBar = ({
   trashCount,
 onUpdateTabColor,
 onOpenColorMenu,
-onSortTabs
+onSortTabs,
+onToggleMultiView,
+isMultiViewActive,
+onOpenMultiView
 }: TabBarProps) => {
   return (
     <header className="tab-header">
@@ -78,7 +84,13 @@ onSortTabs
         >
           <PaintBucketIcon className="w-5 h-5" />
         </button>
-
+        <button
+  className="tab-icon-btn"
+  title="باز کردن داشبورد چندتایی"
+  onClick={onOpenMultiView}
+>
+  <LayoutDashboard className="w-5 h-5" />
+</button>
         <button
           id="trash-btn"
           className="relative tab-icon-btn"
