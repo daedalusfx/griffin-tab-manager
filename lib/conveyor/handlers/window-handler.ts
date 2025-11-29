@@ -1,13 +1,10 @@
-import type { BrowserWindow } from 'electron';
-// --- این خط اصلاح شد ---
 import { handle } from '@/lib/main/shared';
 import { electronAPI } from '@electron-toolkit/preload';
-import { BrowserView, shell } from 'electron';
-import { join } from 'path'; // <-- این را اضافه کنید
+import type { BrowserWindow } from 'electron';
+import { BrowserView, shell, WebContentsView } from 'electron';
+import { join } from 'path';
 // User Agent موزیلا
 
-const CHROME_USER_AGENT =
-'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 
 // --- (کدهای مدیریت viewMap و ...) ---
 const viewMap = new Map<string, BrowserView>()
@@ -33,73 +30,80 @@ export const registerWindowHandlers = (window: BrowserWindow) => {
   handle('window-close', () => window.close())
   handle('window-maximize-toggle', () => (window.isMaximized() ? window.unmaximize() : window.maximize()))
 
-  // --- هندلرهای جدید BrowserView ---
-
   handle('view-create', (tabId: string, url: string) => {
-    const view = new BrowserView({
+    if (viewMap.has(tabId)) return;
+
+    const view:any = new WebContentsView({
       webPreferences: {
         partition: 'persist:tab-session',
-
-        // --- این بخش حیاتی اضافه شد (راه‌حل ۱) ---
         preload: join(__dirname, '../preload/preload.js'),
-        contextIsolation: false, // <-- برای پنهان‌کاری لازم است
-        sandbox: false,          // <-- برای پنهان‌کاری لازم است
+        contextIsolation: false,
+        sandbox: false,
       },
     })
-    
-    
-    // window.addBrowserView(view)
-    view.setBounds(currentBounds)
-    view.webContents.loadURL(url)
 
+    view.setBackgroundColor('#00000000');
+    view.webContents.loadURL(url)
     
     viewMap.set(tabId, view)
   })
 
   handle('view-set-active', (tabId: string | null) => {
     if (activeViewId && viewMap.has(activeViewId)) {
-      // مخفی کردن ویوی فعال قبلی (اگر وجود داشت)
-      const oldView = viewMap.get(activeViewId)
-      window.removeBrowserView(oldView!) // <-- مخفی کردن واقعی
-      oldView!.webContents.setBackgroundThrottling(true); 
+      const oldView : any = viewMap.get(activeViewId)!
+      window.contentView.removeChildView(oldView)
+      oldView.webContents.setBackgroundThrottling(true)
     }
 
     if (tabId && viewMap.has(tabId)) {
-      // نمایش ویوی جدید
-      const newView = viewMap.get(tabId)
-      window.addBrowserView(newView!) // <-- نمایش دادن
-      newView!.setBounds(currentBounds) // اطمینان از درست بودن ابعاد
-      newView!.webContents.setBackgroundThrottling(false);
+      const newView:any = viewMap.get(tabId)!
+      window.contentView.addChildView(newView)
+      newView.setBounds(currentBounds)
+      newView.webContents.setBackgroundThrottling(false)
+      newView.webContents.focus()
       activeViewId = tabId
     } else {
       activeViewId = null
     }
   })
 
+
+
   handle('view-destroy', (tabId: string) => {
-    console.log(`[Main] 3. Received 'view-destroy' request for: ${tabId}`);
     if (viewMap.has(tabId)) {
-      const view = viewMap.get(tabId)
-      window.removeBrowserView(view!)
-      // @ts-ignore (destroy is not in d.ts but exists)
-      view!.webContents.destroy() // آزاد کردن کامل منابع
+      const view:any = viewMap.get(tabId)!
+      
+      if (activeViewId === tabId) {
+        activeViewId = null
+      }
+      
+      try {
+         window.contentView.removeChildView(view)
+      } catch (e) { /* ignore */ }
+
+      // --- اصلاح شده: استفاده از close() به جای destroy() ---
+      try {
+        if (!view.webContents.isDestroyed()) {
+          view.webContents.stop()
+          // destroy() وجود ندارد، close() کار مشابه را انجام می‌دهد
+          view.webContents.close() 
+        }
+      } catch (error) {
+        console.error(`[Main] Error closing webContents for ${tabId}:`, error)
+      }
+
       viewMap.delete(tabId)
-      console.log(`[Main] 4. Successfully destroyed and removed from viewMap: ${tabId}`);
-    }else{
-
-      console.error(`[Main] Error: tabId ${tabId} was NOT found in viewMap!`);
-
+      console.log(`[Main] 🗑️ Successfully destroyed WebContentsView: ${tabId}`)
     }
   })
 
   handle('view-set-bounds', (bounds) => {
     currentBounds = bounds
-    // ابعاد ویوی فعال فعلی را آپدیت کن
     if (activeViewId && viewMap.has(activeViewId)) {
-      viewMap.get(activeViewId)!.setBounds(bounds)
+      const view = viewMap.get(activeViewId)!;
+      view.setBounds(bounds)
     }
   })
-
   // Web content operations
   const webContents = window.webContents
   handle('web-undo', () => webContents.undo())
@@ -117,4 +121,17 @@ export const registerWindowHandlers = (window: BrowserWindow) => {
   handle('web-zoom-out', () => webContents.setZoomLevel(webContents.zoomLevel - 0.5))
   handle('web-toggle-fullscreen', () => window.setFullScreen(!window.fullScreen))
   handle('web-open-url', (url: string) => shell.openExternal(url))
+
+  window.on('closed', () => {
+    console.log('[Main] Window closed, cleaning up all views...')
+    viewMap.forEach((view) => {
+      try {
+        if (!view.webContents.isDestroyed()) {
+          view.webContents.close() // اینجا هم close
+        }
+      } catch (e) {}
+    })
+    viewMap.clear()
+    activeViewId = null
+  })
 }

@@ -82,55 +82,63 @@ export const TabManager = () => {
   const contentWrapperRef = useRef<HTMLDivElement>(null) //
   const didInitViewsRef = useRef<boolean>(false) //
 
+  // --- کد جدید (Lazy Loading) ---
   useEffect(() => {
-    if (activeTabs.length > 0 && !didInitViewsRef.current) {
+    // فقط یکبار اجرا می‌شود تا فلگ initialization ست شود
+    if (!didInitViewsRef.current) {
       didInitViewsRef.current = true
-      console.log('--- Initializing BrowserViews ---')
-      const initViews = async () => {
-        // فقط برای تب‌های نرمال ویو بساز
-        const normalTabs = activeTabs.filter(t => t.type !== 'multiview')
-        
-        const createPromises = normalTabs.map((tab) => {
-          return viewCreate(tab.id, tab.url)
-        })
-        await Promise.all(createPromises)
-        
-        // اگر تب اولیه مولتی‌ویو نبود، فعالش کن
-        const initialTab = activeTabs.find(t => t.id === activeTabId)
-        if (initialTab?.type !== 'multiview') {
-             viewSetActive(activeTabId)
-        }
-      }
-      initViews()
-    }
-  }, []) // وابستگی‌ها را خالی گذاشتم تا فقط یکبار اجرا شود (یا با دقت مدیریت کنید)
-
-  useEffect(() => {
-    if (!didInitViewsRef.current) return
-
-    // تب فعال فعلی را پیدا کن
-    const currentTab = activeTabs.find(t => t.id === activeTabId)
+      console.log('--- App Started: Lazy Loading Mode Active ---')
+      
+      // نکته مهم: ما دیگر اینجا هیچ تبی را نمی‌سازیم (viewCreate صدا زده نمی‌شود).
+      // وظیفه ساخت تب فعال به عهده useEffect بعدی است که به تغییرات activeTabId گوش می‌دهد.
     
-    // آیا تب فعال یک تب مولتی‌ویو است؟
-    const isMultiViewTab = currentTab?.type === 'multiview'
-
+    }
+  }, [])
+  // --- افکت جدید: مدیریت هوشمند و تنبل (Lazy) ویوها ---
+  useEffect(() => {
+    // اگر مودال‌ها باز هستند یا مولتی‌ویو فعال است، ویوی اصلی را مخفی کن
     const shouldHideMainView =
       isTrashModalOpen ||
       isChartEditorModalOpen ||
       !!colorMenuProps ||
       isBulkAddModalOpen ||
-      isMultiViewTab 
+      isMultiViewOpen;
 
-    viewSetActive(shouldHideMainView ? null : activeTabId)
+    if (shouldHideMainView || !activeTabId) {
+      viewSetActive(null);
+      return;
+    }
+
+    // پیدا کردن تب فعال
+    const currentTab = activeTabs.find((t) => t.id === activeTabId);
+    
+    // اگر تب وجود دارد و از نوع normal است (یعنی BrowserView می‌خواهد)
+    if (currentTab && currentTab.type !== 'multiview') {
+      const loadView = async () => {
+        // ۱. درخواست ساخت ویو (اگر قبلاً ساخته شده باشد، هندلر سمت Main آن را نادیده می‌گیرد)
+        // این یعنی "بارگذاری در لحظه نیاز"
+        await viewCreate(currentTab.id, currentTab.url);
+        
+        // ۲. حالا که مطمئنیم ویو وجود دارد، آن را نمایش بده
+        await viewSetActive(currentTab.id);
+      };
+      
+      loadView();
+    } else {
+      // اگر تب مولتی‌ویو است، نیازی به BrowserView نیست
+      viewSetActive(null);
+    }
   }, [
-    activeTabId,
-    activeTabs,
+    activeTabId,           // هر وقت تب عوض شد اجرا می‌شود
+    activeTabs,            // برای دسترسی به اطلاعات تب
     isTrashModalOpen,
     isChartEditorModalOpen,
     colorMenuProps,
     isBulkAddModalOpen,
-    viewSetActive,
-  ])
+    isMultiViewOpen,
+    viewCreate,            // هوک‌ها
+    viewSetActive
+  ]);
   // --- منطق مدیریت ابعاد (Bounds) (بدون تغییر) ---
   const sendBounds = useCallback(() => {
     if (contentWrapperRef.current) {
