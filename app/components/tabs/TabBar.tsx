@@ -1,6 +1,6 @@
 import { Tab } from '@/app/hooks/useTabStore';
 import { AnimatePresence, motion, Reorder } from 'framer-motion';
-import { LayoutDashboard, ListIcon, PaintBucketIcon, TrashIcon } from 'lucide-react';
+import { LayoutDashboard, ListIcon, PaintBucketIcon, Settings, TrashIcon } from 'lucide-react';
 import React from 'react';
 import { TabItem } from './TabItem';
 
@@ -19,6 +19,7 @@ interface TabBarProps {
   onSortTabs: () => void
   onToggleMultiView: () => void
   onOpenMultiView: () => void
+  onOpenSettings: () => void 
 }
 
 export const TabBar = ({
@@ -35,7 +36,8 @@ onOpenColorMenu,
 onSortTabs,
 onToggleMultiView,
 isMultiViewActive,
-onOpenMultiView
+onOpenMultiView,
+onOpenSettings
 }: TabBarProps) => {
   return (
     <header className="tab-header">
@@ -91,6 +93,14 @@ onOpenMultiView
 >
   <LayoutDashboard className="w-5 h-5" />
 </button>
+
+<button
+          className="tab-icon-btn"
+          title="تنظیمات"
+          onClick={onOpenSettings}
+        >
+          <Settings className="w-5 h-5" />
+        </button>
         <button
           id="trash-btn"
           className="relative tab-icon-btn"

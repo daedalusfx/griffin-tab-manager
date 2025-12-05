@@ -26,6 +26,8 @@ interface TabStoreState {
   activeTabId: string | null
   isMultiViewOpen: boolean
   multiViewSlots: (string | null)[] 
+  inactivityTimeoutMinutes: number 
+
   // اکشن‌ها
   setActiveTabs: (tabs: Tab[]) => void
   setActiveTabId: (id: string | null) => void
@@ -37,6 +39,8 @@ interface TabStoreState {
   toggleMultiView: () => void
   setMultiViewSlot: (index: number, tabId: string | null) => void
   updateTabGridSlots: (tabId: string, slots: (string | null)[]) => void
+
+  setInactivityTimeoutMinutes: (minutes: number) => void
 }
 
 // یک نام واحد برای ذخیره‌سازی کل استور تب‌ها در localStorage
@@ -193,6 +197,10 @@ export const useTabStore = create<TabStoreState>()(
           return { activeTabs: sortedTabs }
         })
       },
+
+      inactivityTimeoutMinutes: 15, 
+
+      setInactivityTimeoutMinutes: (minutes) => set({ inactivityTimeoutMinutes: minutes }),
     }),
     {
       name: TABS_KEY,
@@ -201,7 +209,8 @@ export const useTabStore = create<TabStoreState>()(
         activeTabs: state.activeTabs,
         deletedTabs: state.deletedTabs,
         activeTabId: state.activeTabId,
-        multiViewSlots: state.multiViewSlots
+        multiViewSlots: state.multiViewSlots,
+        inactivityTimeoutMinutes: state.inactivityTimeoutMinutes
       }),
     },
   ),

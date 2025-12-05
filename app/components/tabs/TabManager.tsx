@@ -16,6 +16,7 @@ import { ChartEditorModal } from './ChartEditorModal'
 import { ChartListSidebar } from './ChartListSidebar'
 import { ColorPickerMenu } from './ColorPickerMenu'
 import { MultiViewGrid } from './MultiViewGrid'
+import { SettingsModal } from './SettingsModal'
 import { TabBar } from './TabBar'
 import { TabContent } from './TabContent'
 import { TrashModal } from './TrashModal'
@@ -23,8 +24,6 @@ import { TrashModal } from './TrashModal'
 // --- ثابت‌ها ---
 const BOUNDS_DEBOUNCE_MS = 350
 
-const INACTIVE_TIMEOUT_MS = 2 * 60 * 1000 
-const GC_INTERVAL_MS = 60 * 1000 // چک کردن هر ۱ دقیقه
 
 
 // تعریف تایپ برای منوی انتخاب رنگ
@@ -44,8 +43,8 @@ export const TabManager = () => {
   )
   const [isBulkAddModalOpen, setIsBulkAddModalOpen] = useState(false) 
   const sortTabsByColor = useTabStore((state) => state.sortTabsByColor)
-
-
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false)
+  const inactivityTimeoutMinutes = useTabStore((state) => state.inactivityTimeoutMinutes)
   const isMultiViewOpen = useTabStore((state) => state.isMultiViewOpen)
   const toggleMultiView = useTabStore((state) => state.toggleMultiView)
 
@@ -87,41 +86,34 @@ export const TabManager = () => {
   const didInitViewsRef = useRef<boolean>(false) //
 
 
-
-  // --- فیچر جدید: Garbage Collector (آزادسازی رم) ---
+// --- Garbage Collector   ---
   useEffect(() => {
+    // اگر مقدار 0 باشد، یعنی این قابلیت غیرفعال است
+    if (inactivityTimeoutMinutes === 0) return;
+
     const intervalId = setInterval(() => {
       const now = Date.now()
+      // تبدیل دقیقه به میلی‌ثانیه
+      const timeoutMs = inactivityTimeoutMinutes * 60 * 1000 
       
       activeTabs.forEach((tab) => {
-        // ۱. اگر تب، تبِ فعال فعلی نیست
-        // ۲. اگر نوع تب نرمال است (مولتی‌ویو را نمی‌بندیم چون وب‌ویو است)
-        // ۳. اگر زمان آخرین بازدید را دارد
         if (
           tab.id !== activeTabId && 
           tab.type !== 'multiview' && 
           tab.lastAccessed
         ) {
-          // محاسبه اختلاف زمانی
           const timeDiff = now - tab.lastAccessed
           
-          if (timeDiff > INACTIVE_TIMEOUT_MS) {
-            console.log(`[GC] Hibernating tab due to inactivity: ${tab.title}`)
-            // ویو را از Main Process حذف می‌کنیم تا رم آزاد شود
+          if (timeDiff > timeoutMs) {
+            console.log(`[GC] Hibernating tab: ${tab.title}`)
             viewDestroy(tab.id)
-            
-            // نکته: نیازی نیست در Zustand چیزی را تغییر دهیم یا lastAccessed را null کنیم.
-            // چون وقتی کاربر دوباره روی تب کلیک کند، useEffect مربوط به Lazy Loading (پایین‌تر)
-            // دوباره viewCreate را صدا می‌زند و ویو از نو ساخته می‌شود.
           }
         }
       })
-    }, GC_INTERVAL_MS)
+    }, 60 * 1000) // چک کردن هر ۱ دقیقه
 
     return () => clearInterval(intervalId)
-  }, [activeTabs, activeTabId, viewDestroy])
-
-
+  }, [activeTabs, activeTabId, viewDestroy, inactivityTimeoutMinutes]) 
 
 
   // --- کد جدید (Lazy Loading) ---
@@ -322,6 +314,7 @@ export const TabManager = () => {
           onToggleMultiView={toggleMultiView} 
           isMultiViewActive={isMultiViewOpen}
           onOpenMultiView={handleOpenMultiView}
+          onOpenSettings={() => setIsSettingsModalOpen(true)}
         />
 
         <div className="tab-content-wrapper" ref={contentWrapperRef}>
@@ -355,6 +348,11 @@ export const TabManager = () => {
         onClose={() => setIsBulkAddModalOpen(false)}
         onSubmit={handleBulkEditorSubmit}
       />
+
+      <SettingsModal 
+         isOpen={isSettingsModalOpen}
+         onClose={() => setIsSettingsModalOpen(false)}
+       />
 
       {colorMenuProps && (
         <ColorPickerMenu
