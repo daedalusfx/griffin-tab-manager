@@ -12,6 +12,8 @@ export interface Tab {
 
   type?: 'normal' | 'multiview'
   gridSlots?: (string | null)[]
+
+  lastAccessed?: number
 }
 
 /**
@@ -78,7 +80,13 @@ export const useTabStore = create<TabStoreState>()(
         })
       },
 
-      setActiveTabId: (id) => set({ activeTabId: id }),
+      setActiveTabId: (id) => set((state) => ({
+        activeTabId: id,
+        // وقتی تب فعال می‌شود، زمان بازدیدش را آپدیت کن
+        activeTabs: state.activeTabs.map((tab) => 
+          tab.id === id ? { ...tab, lastAccessed: Date.now() } : tab
+        )
+      })),
 
       /**
        * یک تب جدید ایجاد می‌کند
@@ -90,16 +98,23 @@ export const useTabStore = create<TabStoreState>()(
           url: url,
           type: type,
           // اگر مولتی ویو بود، ۳ اسلات خالی براش بساز
-          gridSlots: type === 'multiview' ? [null, null, null] : undefined 
+          gridSlots: type === 'multiview' ? [null, null, null] : undefined ,
+          lastAccessed: Date.now()
         }
 
         set((state) => ({
           activeTabs: [...state.activeTabs, newTab],
         }))
 
-        if (activate) {
-          set({ activeTabId: newTab.id })
+       if (activate) {
+          // اگر تب جدید فعال شد، setActiveTabId خودش زمان را آپدیت می‌کند، 
+          // اما اینجا دستی هم ست می‌کنیم که محکم کاری شود
+          set((state) => ({ 
+             activeTabId: newTab.id,
+             activeTabs: state.activeTabs.map(t => t.id === newTab.id ? {...t, lastAccessed: Date.now()} : t)
+          }))
         }
+
         return newTab
       },
 
