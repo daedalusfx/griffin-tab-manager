@@ -1,5 +1,5 @@
-import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 /**
  * اینترفیس تب
@@ -10,8 +10,10 @@ export interface Tab {
   url: string
   color?: string | null
 
-  type?: 'normal' | 'multiview'
+  type?: 'normal' | 'multiview' | 'settings'
   gridSlots?: (string | null)[]
+
+  lastAccessed?: number
 }
 
 /**
@@ -24,10 +26,12 @@ interface TabStoreState {
   activeTabId: string | null
   isMultiViewOpen: boolean
   multiViewSlots: (string | null)[] 
+  inactivityTimeoutMinutes: number 
+
   // اکشن‌ها
   setActiveTabs: (tabs: Tab[]) => void
   setActiveTabId: (id: string | null) => void
-  createTab: (title: string, url: string, activate?: boolean , type?: 'normal' | 'multiview') => Tab | undefined
+  createTab: (title: string, url: string, activate?: boolean , type?: 'normal' | 'multiview' | 'settings') => Tab | undefined
   deleteTab: (tabId: string) => void
   restoreTab: (tabId: string) => void
   updateTabColor: (tabId: string, color: string | null) => void
@@ -35,6 +39,8 @@ interface TabStoreState {
   toggleMultiView: () => void
   setMultiViewSlot: (index: number, tabId: string | null) => void
   updateTabGridSlots: (tabId: string, slots: (string | null)[]) => void
+
+  setInactivityTimeoutMinutes: (minutes: number) => void
 }
 
 // یک نام واحد برای ذخیره‌سازی کل استور تب‌ها در localStorage
@@ -78,7 +84,13 @@ export const useTabStore = create<TabStoreState>()(
         })
       },
 
-      setActiveTabId: (id) => set({ activeTabId: id }),
+      setActiveTabId: (id) => set((state) => ({
+        activeTabId: id,
+        // وقتی تب فعال می‌شود، زمان بازدیدش را آپدیت کن
+        activeTabs: state.activeTabs.map((tab) => 
+          tab.id === id ? { ...tab, lastAccessed: Date.now() } : tab
+        )
+      })),
 
       /**
        * یک تب جدید ایجاد می‌کند
@@ -90,16 +102,23 @@ export const useTabStore = create<TabStoreState>()(
           url: url,
           type: type,
           // اگر مولتی ویو بود، ۳ اسلات خالی براش بساز
-          gridSlots: type === 'multiview' ? [null, null, null] : undefined 
+          gridSlots: type === 'multiview' ? [null, null, null] : undefined ,
+          lastAccessed: Date.now()
         }
 
         set((state) => ({
           activeTabs: [...state.activeTabs, newTab],
         }))
 
-        if (activate) {
-          set({ activeTabId: newTab.id })
+       if (activate) {
+          // اگر تب جدید فعال شد، setActiveTabId خودش زمان را آپدیت می‌کند، 
+          // اما اینجا دستی هم ست می‌کنیم که محکم کاری شود
+          set((state) => ({ 
+             activeTabId: newTab.id,
+             activeTabs: state.activeTabs.map(t => t.id === newTab.id ? {...t, lastAccessed: Date.now()} : t)
+          }))
         }
+
         return newTab
       },
 
@@ -178,6 +197,10 @@ export const useTabStore = create<TabStoreState>()(
           return { activeTabs: sortedTabs }
         })
       },
+
+      inactivityTimeoutMinutes: 15, 
+
+      setInactivityTimeoutMinutes: (minutes) => set({ inactivityTimeoutMinutes: minutes }),
     }),
     {
       name: TABS_KEY,
@@ -186,7 +209,8 @@ export const useTabStore = create<TabStoreState>()(
         activeTabs: state.activeTabs,
         deletedTabs: state.deletedTabs,
         activeTabId: state.activeTabId,
-        multiViewSlots: state.multiViewSlots
+        multiViewSlots: state.multiViewSlots,
+        inactivityTimeoutMinutes: state.inactivityTimeoutMinutes
       }),
     },
   ),
