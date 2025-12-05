@@ -1,5 +1,5 @@
-import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 /**
  * اینترفیس تب
@@ -10,7 +10,7 @@ export interface Tab {
   url: string
   color?: string | null
 
-  type?: 'normal' | 'multiview'
+  type?: 'normal' | 'multiview' | 'settings'
   gridSlots?: (string | null)[]
 
   lastAccessed?: number
@@ -31,7 +31,7 @@ interface TabStoreState {
   // اکشن‌ها
   setActiveTabs: (tabs: Tab[]) => void
   setActiveTabId: (id: string | null) => void
-  createTab: (title: string, url: string, activate?: boolean , type?: 'normal' | 'multiview') => Tab | undefined
+  createTab: (title: string, url: string, activate?: boolean , type?: 'normal' | 'multiview' | 'settings') => Tab | undefined
   deleteTab: (tabId: string) => void
   restoreTab: (tabId: string) => void
   updateTabColor: (tabId: string, color: string | null) => void

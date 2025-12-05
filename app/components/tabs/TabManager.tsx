@@ -16,7 +16,7 @@ import { ChartEditorModal } from './ChartEditorModal'
 import { ChartListSidebar } from './ChartListSidebar'
 import { ColorPickerMenu } from './ColorPickerMenu'
 import { MultiViewGrid } from './MultiViewGrid'
-import { SettingsModal } from './SettingsModal'
+import { SettingsPage } from './SettingsPage'
 import { TabBar } from './TabBar'
 import { TabContent } from './TabContent'
 import { TrashModal } from './TrashModal'
@@ -43,7 +43,6 @@ export const TabManager = () => {
   )
   const [isBulkAddModalOpen, setIsBulkAddModalOpen] = useState(false) 
   const sortTabsByColor = useTabStore((state) => state.sortTabsByColor)
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false)
   const inactivityTimeoutMinutes = useTabStore((state) => state.inactivityTimeoutMinutes)
   const isMultiViewOpen = useTabStore((state) => state.isMultiViewOpen)
   const toggleMultiView = useTabStore((state) => state.toggleMultiView)
@@ -128,51 +127,51 @@ export const TabManager = () => {
     
     }
   }, [])
-  // --- افکت جدید: مدیریت هوشمند و تنبل (Lazy) ویوها ---
+  
+
+  // --- افکت مدیریت هوشمند و تنبل (Lazy) ویوها ---
   useEffect(() => {
-    // اگر مودال‌ها باز هستند یا مولتی‌ویو فعال است، ویوی اصلی را مخفی کن
     const shouldHideMainView =
       isTrashModalOpen ||
       isChartEditorModalOpen ||
       !!colorMenuProps ||
       isBulkAddModalOpen ||
-      isMultiViewOpen;
+      isMultiViewOpen
 
     if (shouldHideMainView || !activeTabId) {
-      viewSetActive(null);
-      return;
+      viewSetActive(null)
+      return
     }
 
-    // پیدا کردن تب فعال
-    const currentTab = activeTabs.find((t) => t.id === activeTabId);
-    
-    // اگر تب وجود دارد و از نوع normal است (یعنی BrowserView می‌خواهد)
-    if (currentTab && currentTab.type !== 'multiview') {
+    const currentTab = activeTabs.find((t) => t.id === activeTabId)
+
+    if (
+      currentTab && 
+      currentTab.type !== 'multiview' && 
+      currentTab.type !== 'settings' 
+    ) {
       const loadView = async () => {
-        // ۱. درخواست ساخت ویو (اگر قبلاً ساخته شده باشد، هندلر سمت Main آن را نادیده می‌گیرد)
-        // این یعنی "بارگذاری در لحظه نیاز"
-        await viewCreate(currentTab.id, currentTab.url);
-        
-        // ۲. حالا که مطمئنیم ویو وجود دارد، آن را نمایش بده
-        await viewSetActive(currentTab.id);
-      };
-      
-      loadView();
+        await viewCreate(currentTab.id, currentTab.url)
+        await viewSetActive(currentTab.id)
+      }
+      loadView()
     } else {
-      // اگر تب مولتی‌ویو است، نیازی به BrowserView نیست
-      viewSetActive(null);
+      // برای تب‌های تنظیمات و مولتی‌ویو، ویوی مرورگر را مخفی کن
+      viewSetActive(null)
     }
   }, [
-    activeTabId,           // هر وقت تب عوض شد اجرا می‌شود
-    activeTabs,            // برای دسترسی به اطلاعات تب
+    activeTabId,
+    activeTabs,
     isTrashModalOpen,
     isChartEditorModalOpen,
     colorMenuProps,
     isBulkAddModalOpen,
     isMultiViewOpen,
-    viewCreate,            // هوک‌ها
-    viewSetActive
-  ]);
+    viewCreate,
+    viewSetActive,
+  ])
+
+
   // --- منطق مدیریت ابعاد (Bounds) (بدون تغییر) ---
   const sendBounds = useCallback(() => {
     if (contentWrapperRef.current) {
@@ -282,6 +281,23 @@ export const TabManager = () => {
     setIsBulkAddModalOpen(false);
   };
 
+
+  const handleOpenSettings = () => {
+    // ۱. چک کن آیا قبلاً تب تنظیمات داریم؟
+    const existingSettingsTab = activeTabs.find(t => t.type === 'settings')
+    
+    if (existingSettingsTab) {
+      // اگر هست، فقط فعالش کن
+      setActiveTabId(existingSettingsTab.id)
+    } else {
+      // اگر نیست، بسازش
+      createTab('تنظیمات', '', true, 'settings')
+      // نکته: آدرس url خالی است چون ویو ندارد
+    }
+    
+    setIsSidebarOpen(false) // اگر سایدبار باز بود ببند
+  }
+
   // پیدا کردن آبجکت تب فعال برای رندر
   const activeTabObj = activeTabs.find(t => t.id === activeTabId)
 
@@ -314,12 +330,13 @@ export const TabManager = () => {
           onToggleMultiView={toggleMultiView} 
           isMultiViewActive={isMultiViewOpen}
           onOpenMultiView={handleOpenMultiView}
-          onOpenSettings={() => setIsSettingsModalOpen(true)}
+          onOpenSettings={handleOpenSettings}
         />
 
         <div className="tab-content-wrapper" ref={contentWrapperRef}>
-
-        {activeTabObj?.type === 'multiview' ? (
+          {activeTabObj?.type === 'settings' ? (
+            <SettingsPage />
+          ) : activeTabObj?.type === 'multiview' ? (
             <MultiViewGrid 
               currentTab={activeTabObj} 
               allTabs={activeTabs} 
@@ -348,11 +365,6 @@ export const TabManager = () => {
         onClose={() => setIsBulkAddModalOpen(false)}
         onSubmit={handleBulkEditorSubmit}
       />
-
-      <SettingsModal 
-         isOpen={isSettingsModalOpen}
-         onClose={() => setIsSettingsModalOpen(false)}
-       />
 
       {colorMenuProps && (
         <ColorPickerMenu
