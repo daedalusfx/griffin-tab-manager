@@ -14,26 +14,22 @@ interface ChartSelectorProps {
 
 const Wrapper = styled.div`
   position: relative;
-  height: 100%;
-  width: 100%;
-  display: flex;
+  height: 24px; /* ارتفاع ثابت و کوچک مثل دکمه */
+  display: inline-flex; /* فقط به اندازه محتوا فضا می‌گیرد */
   align-items: center;
   border-radius: 4px;
   transition: all 0.2s ease;
-  padding: 0 4px;
+  padding: 0 8px;
+  cursor: pointer;
+  max-width: 160px;
+  
 
-  /* وقتی موس روی کامپوننت می‌آید */
+  color: var(--muted-foreground); 
+  
   &:hover {
-    background-color: var(--window-c-hover, rgba(255, 255, 255, 0.1));
-    
-    /* تغییر رنگ متن‌ها در حالت هاور */
-    .selector-title {
-      color: var(--foreground);
-    }
-    .selector-icon {
-      color: var(--foreground);
-      transform: translateY(2px); /* انیمیشن کوچک حرکت */
-    }
+    background-color: var(--accent);
+     /* رنگ پس‌زمینه در هاور */
+    color: var(--foreground);
   }
 `;
 
@@ -44,14 +40,14 @@ const NativeSelect = styled.select`
   height: 100%;
   opacity: 0; /* کاملا نامرئی */
   cursor: pointer;
+  appearance: none;
+   /* حذف استایل پیش‌فرض مرورگر */
   
-  /* نکته مهم برای دارک مود شدن منوی بازشونده */
   color-scheme: dark; 
 
-  /* استایل آپشن‌ها برای اطمینان بیشتر */
   & option, & optgroup {
-    background-color: #282828;
-    color: var(--foreground);
+    background-color: var(--popover);
+    color: var(--popover-foreground);
   }
 `;
 
@@ -70,22 +66,20 @@ export const ChartSelector = ({ currentChartId, path, allTabs }: ChartSelectorPr
   const currentTab = allTabs.find(t => t.id === currentChartId);
 
   return (
-    <Wrapper title="برای تغییر چارت کلیک کنید">
-      {/* لایه نمایشی (آیکون و متن) */}
-      <div className="flex items-center gap-1.5 w-full pointer-events-none z-10">
-        <span className="selector-title truncate text-xs font-medium text-foreground/90 transition-colors max-w-[140px]">
-          {currentTab?.title || 'انتخاب چارت...'}
+    <Wrapper title="تغییر چارت">
+      {/* لایه نمایشی (متن و آیکون) */}
+      <div className="flex items-center gap-2 pointer-events-none z-10 w-full">
+        <span className="truncate text-xs font-medium">
+          {currentTab?.title || 'انتخاب...'}
         </span>
-
-        <ChevronDownIcon 
-            className="selector-icon w-3 h-3 text-muted-foreground/50 transition-all ml-auto" 
-        />
+        <ChevronDownIcon className="w-3 h-3 opacity-70 shrink-0" />
       </div>
 
-      {/* سلکتور اصلی */}
+      {/* سلکتور مخفی روی دکمه */}
       <NativeSelect
         value={currentChartId}
         onChange={handleChange}
+        onClick={(e) => e.stopPropagation()} // جلوگیری از تداخل با درگ پنجره
       >
         <optgroup label="چارت‌های موجود">
           {allTabs
