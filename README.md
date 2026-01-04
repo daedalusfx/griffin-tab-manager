@@ -6,6 +6,14 @@ A specialized Electron & React application designed for managing and viewing web
 
 This application is built with a modern tech stack and features an advanced, type-safe IPC core. It's specifically hardened to bypass bot-detection on websites by modifying the `BrowserView` user-agent and patching Electron's preload environment.
 
+
+![Preview](/screenshots/multi_tab.png)
+![Preview](/screenshots/normal_tab.png)
+![Preview](/screenshots/settings_tab.png)
+
+
+
+
 ## Core Features
 
 * **Persistent Multi-Tab Management**: Tabs (including active tab and tab order) are saved to `localStorage` and fully restored on app startup.
