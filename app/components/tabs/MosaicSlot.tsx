@@ -1,5 +1,6 @@
 import { useConveyor } from '@/app/hooks/use-conveyor';
-import React, { useEffect, useRef } from 'react';
+import { debounce } from 'lodash-es';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import useResizeObserver from 'use-resize-observer';
 
 interface MosaicSlotProps {
@@ -11,31 +12,50 @@ interface MosaicSlotProps {
 export const MosaicSlot = ({ chartId, url, title }: MosaicSlotProps) => {
   const { viewCreate, viewSetBounds, viewHide } = useConveyor('window');
   const slotRef = useRef<HTMLDivElement>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
+  
 
+  // ایجاد ویو فقط یک بار
   useEffect(() => {
-    // 1. ساخت ویو (اگر وجود ندارد)
-    viewCreate(chartId, url);
+    let mounted = true;
+    
+    const initView = async () => {
+      // ایجاد ویو
+      await viewCreate(chartId, url);
+      if (mounted) setIsLoaded(true);
+    };
 
-    // 2. مخفی کردن ویو هنگام Unmount (مثلاً وقتی کاربر این کاشی را می‌بندد یا تب را عوض می‌کند)
+    initView();
+
     return () => {
+      mounted = false;
+      // مخفی کردن به جای نابود کردن کامل (برای سرعت بیشتر در سوئیچ)
       viewHide(chartId);
     };
-  }, [chartId, url, viewCreate, viewHide]);
+  }, [chartId, url]); // وابستگی‌ها را دقیق کن
 
-  // 3. رصد تغییر سایز و ارسال مختصات به الکترون
+  // جلوگیری از ارسال رگباری مختصات با Debounce
+  const handleResize = useMemo(
+    () =>
+      debounce((width: number, height: number, x: number, y: number) => {
+        if (width > 0 && height > 0) {
+          viewSetBounds(chartId, {
+            x: Math.round(x),
+            y: Math.round(y),
+            width: Math.round(width),
+            height: Math.round(height),
+          });
+        }
+      }, 300), // 16ms = ~60fps
+    [chartId, viewSetBounds]
+  );
+
   useResizeObserver({
     ref: slotRef,
-    onResize: () => {
-      if (slotRef.current) {
+    onResize: ({ width, height }) => {
+      if (slotRef.current && width && height) {
         const rect = slotRef.current.getBoundingClientRect();
-        
-        // ارسال مختصات دقیق به الکترون
-        viewSetBounds(chartId, {
-            x: Math.round(rect.x),
-            y: Math.round(rect.y),
-            width: Math.round(rect.width),
-            height: Math.round(rect.height),
-        });
+        handleResize(width, height, rect.x, rect.y);
       }
     },
   });
@@ -43,13 +63,14 @@ export const MosaicSlot = ({ chartId, url, title }: MosaicSlotProps) => {
   return (
     <div 
       ref={slotRef} 
-      className="w-full h-full bg-background flex items-center justify-center relative overflow-hidden"
+      className="w-full h-full bg-background relative overflow-hidden"
     >
-        {/* این متن فقط وقتی دیده می‌شود که ویو هنوز لود نشده باشد */}
-        <div className="text-muted-foreground opacity-20 select-none flex flex-col items-center gap-2">
-            <span className="text-sm font-medium">{title}</span>
-            <span className="text-xs">Loading View...</span>
+      {!isLoaded && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground bg-card/50 z-10">
+          <span className="loading-spinner mb-2" /> {/* می‌توانید یک اسپینر اضافه کنید */}
+          <span className="text-xs">در حال بارگذاری...</span>
         </div>
+      )}
     </div>
   );
 };
