@@ -1,13 +1,12 @@
 import { ConveyorApi } from '@/lib/preload/shared'
 
-
-
 interface ViewBounds {
   x: number
   y: number
   width: number
   height: number
 }
+
 export class WindowApi extends ConveyorApi {
   // Generate window methods
   windowInit = () => this.invoke('window-init')
@@ -35,10 +34,12 @@ export class WindowApi extends ConveyorApi {
   webToggleFullscreen = () => this.invoke('web-toggle-fullscreen')
   webOpenUrl = (url: string) => this.invoke('web-open-url', url)
 
-
-  // === متدهای جدید BrowserView ===
+  // === BrowserView Methods ===
   viewCreate = (tabId: string, url: string) => this.invoke('view-create', tabId, url)
   viewSetActive = (tabId: string | null) => this.invoke('view-set-active', tabId)
   viewDestroy = (tabId: string) => this.invoke('view-destroy', tabId)
-  viewSetBounds = (bounds: ViewBounds) => this.invoke('view-set-bounds', bounds)
+  viewHide = (tabId: string) => this.invoke('view-hide', tabId) // <--- جدید
+  
+  // <--- آپدیت شده
+  viewSetBounds = (tabId: string, bounds: ViewBounds) => this.invoke('view-set-bounds', tabId, bounds)
 }

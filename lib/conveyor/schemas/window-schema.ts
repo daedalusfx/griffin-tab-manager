@@ -1,6 +1,5 @@
 import { z } from 'zod'
 
-
 const boundsSchema = z.object({
   x: z.number(),
   y: z.number(),
@@ -105,7 +104,8 @@ export const windowIpcSchema = {
     args: z.tuple([z.string()]),
     return: z.void(),
   },
-  // === کانال‌های جدید BrowserView ===
+  
+  // === View Management ===
   'view-create': {
     args: z.tuple([z.string(), z.string()]), // (tabId, url)
     return: z.void(),
@@ -118,8 +118,13 @@ export const windowIpcSchema = {
     args: z.tuple([z.string()]), // (tabId)
     return: z.void(),
   },
+  'view-hide': { // <--- : برای مخفی کردن ویو بدون حذف کامل
+    args: z.tuple([z.string()]), // (tabId)
+    return: z.void(),
+  },
   'view-set-bounds': {
-    args: z.tuple([boundsSchema]), // (bounds)
+    // <--- آپدیت شده: حالا ID هم می‌گیرد تا بتوانیم ویوهای خاص را ریسایز کنیم
+    args: z.tuple([z.string(), boundsSchema]), // (tabId, bounds)
     return: z.void(),
   },
 }

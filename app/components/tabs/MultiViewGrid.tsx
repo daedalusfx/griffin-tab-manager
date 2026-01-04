@@ -1,177 +1,87 @@
-import { Tab, useTabStore } from '@/app/hooks/useTabStore'
-import { ActivityIcon, PlayCircleIcon, PlusIcon } from 'lucide-react'; // PlayCircleIcon اضافه شد
-import React, { useCallback, useEffect, useMemo, useState } from 'react'; // useState و useEffect اضافه شدند
-import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
-
-// --- تنظیمات ثابت ---
-const REAL_USER_AGENT =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+import { Tab } from '@/app/hooks/useTabStore';
+import React, { useMemo, useState } from 'react';
+import { Mosaic, MosaicNode, MosaicWindow } from 'react-mosaic-component';
+import 'react-mosaic-component/react-mosaic-component.css';
+import { ChartSelector } from './ChartSelector';
+import { MosaicSlot } from './MosaicSlot';
 
 interface MultiViewGridProps {
   currentTab: Tab
   allTabs: Tab[]
 }
 
-// --- کامپوننت داخلی هر اسلات ---
-interface SlotProps {
-  index: number
-  currentChartId: string | null
-  availableCharts: Tab[]
-  onSelect: (index: number, chartId: string | null) => void
-}
+export type MosaicKey = string;
 
-const Slot = React.memo(({ index, currentChartId, availableCharts, onSelect }: SlotProps) => {
-  const selectedChart = useMemo(
-    () => availableCharts.find((t) => t.id === currentChartId),
-    [availableCharts, currentChartId]
-  )
-
-  // ۱. استیت برای کنترل اینکه آیا دکمه لود زده شده یا نه
-  const [isLoaded, setIsLoaded] = useState(false)
-
-  // ۲. هر وقت چارت عوض شد، وضعیت لود رو ریست کن تا دکمه دوباره بیاد
-  useEffect(() => {
-    setIsLoaded(false)
-  }, [currentChartId])
-
-  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    onSelect(index, e.target.value || null)
-  }
-
-  return (
-    <div className="w-full h-full relative bg-background border border-border overflow-hidden flex flex-col group">
-      {/* هدر اسلات */}
-      <div className="h-9 bg-muted/40 border-b border-border flex items-center px-2 gap-2 flex-shrink-0 transition-colors group-hover:bg-muted/80">
-        <span className="flex items-center justify-center w-5 h-5 rounded bg-primary/10 text-primary text-[10px] font-bold">
-          {index + 1}
-        </span>
-        
-        <div className="flex-1 relative">
-          <select
-            className="w-full bg-transparent text-xs font-medium outline-none cursor-pointer appearance-none py-1 pr-4"
-            value={currentChartId || ''}
-            onChange={handleChange}
-            dir="rtl"
-          >
-            <option value="">-- انتخاب چارت --</option>
-            {availableCharts.map((chart) => (
-              <option key={chart.id} value={chart.id}>
-                {chart.title}
-              </option>
-            ))}
-          </select>
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 pointer-events-none opacity-50">
-             <ActivityIcon className="w-3 h-3" />
-          </div>
-        </div>
-      </div>
-
-      {/* بدنه اسلات */}
-      <div className="flex-1 relative w-full h-full bg-card/20">
-        {selectedChart ? (
-          // ۳. اگر لود شده بود وب‌ویو رو نشون بده، اگر نه دکمه لود رو
-          isLoaded ? (
-            <webview
-              src={selectedChart.url}
-              className="w-full h-full"
-              partition="persist:main"
-              useragent={REAL_USER_AGENT}
-              webpreferences="contextIsolation=no, sandbox=no, nodeIntegration=no, nativeWindowOpen=yes"
-              allowpopups={true}
-              style={{ width: '100%', height: '100%', display: 'flex' }}
-            />
-          ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center gap-3 select-none">
-                <span className="text-muted-foreground text-sm font-medium opacity-70">
-                    {selectedChart.title}
-                </span>
-                <button 
-                    onClick={() => setIsLoaded(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-all shadow-sm active:scale-95"
-                >
-                    <PlayCircleIcon className="w-4 h-4" />
-                    <span className="text-xs font-bold">بارگذاری چارت</span>
-                </button>
-            </div>
-          )
-        ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground/30 select-none">
-            <div className="p-4 rounded-full bg-muted/30 mb-3">
-               <PlusIcon className="w-8 h-8 opacity-50" />
-            </div>
-            <span className="text-xs font-medium">چارتی انتخاب نشده</span>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-})
-
-Slot.displayName = 'Slot'
-
-// --- کامپوننت اصلی (بدون تغییر) ---
 export const MultiViewGrid = ({ currentTab, allTabs }: MultiViewGridProps) => {
-  const updateTabGridSlots = useTabStore((state) => state.updateTabGridSlots)
+  const availableCharts = useMemo(() => 
+    allTabs.filter(t => t.type !== 'multiview' && t.type !== 'settings'),
+  [allTabs]);
 
-  const chartOptions = useMemo(() => {
-    return allTabs.filter((t) => t.type !== 'multiview')
-  }, [allTabs])
-
-  const slots = useMemo(() => {
-    return currentTab.gridSlots || [null, null, null]
-  }, [currentTab.gridSlots])
-
-  const handleSlotChange = useCallback(
-    (index: number, newChartId: string | null) => {
-      const newSlots = [...slots]
-      newSlots[index] = newChartId
-      updateTabGridSlots(currentTab.id, newSlots)
-    },
-    [slots, currentTab.id, updateTabGridSlots]
-  )
+  const [layout, setLayout] = useState<MosaicNode<MosaicKey> | null>(() => {
+      if (availableCharts.length === 0) return null;
+      if (availableCharts.length === 1) return availableCharts[0].id;
+      return {
+          direction: 'row',
+          first: availableCharts[0].id,
+          second: availableCharts[1].id,
+      };
+  });
 
   return (
-    <div className="w-full h-full p-1 bg-background select-none" dir="ltr">
-      <PanelGroup direction="horizontal" autoSaveId={`grid-h-${currentTab.id}`}>
-        <Panel id="left-main" defaultSize={60} minSize={20}>
-          <Slot
-            index={0}
-            currentChartId={slots[0]}
-            availableCharts={chartOptions}
-            onSelect={handleSlotChange}
+    <div className="w-full h-full bg-background mosaic-theme-dark" dir="ltr">
+      {availableCharts.length === 0 ? (
+          <div className="flex items-center justify-center h-full text-muted-foreground">
+              هیچ چارت بازی وجود ندارد.
+          </div>
+      ) : (
+          <Mosaic<MosaicKey>
+            renderTile={(id, path) => {
+                const chart = availableCharts.find(c => c.id === id);
+                
+                // اگر چارت بسته شده بود
+                if (!chart) return (
+                    <MosaicWindow<MosaicKey> path={path} title="حذف شده">
+                         <div className="flex items-center justify-center h-full text-destructive">
+                             چارت بسته شده
+                         </div>
+                    </MosaicWindow>
+                );
+
+                return (
+                    <MosaicWindow<MosaicKey>
+                        path={path}
+                        // اینجا به جای تایتل متنی، سلکتور را می‌گذاریم
+                        title={ 
+                            <ChartSelector 
+                                currentChartId={id} 
+                                path={path} 
+                                allTabs={allTabs} 
+                            /> as any
+                        }
+                        // کنترل‌های تولبار (مثل دکمه بستن و اسپلیت)
+                        toolbarControls={[
+                             // اگر بخواهید دکمه‌های پیش‌فرض را نگه دارید یا کاستوم کنید
+                             // به صورت پیش‌فرض دکمه اسپلیت و بستن وجود دارد
+                        ]}
+                    >
+                        <MosaicSlot 
+                            chartId={chart.id} 
+                            url={chart.url} 
+                            title={chart.title}
+                        />
+                    </MosaicWindow>
+                );
+            }}
+            value={layout}
+            onChange={setLayout}
+            className="mosaic-blueprint-theme"
+            zeroStateView={
+                <div className="flex items-center justify-center h-full text-muted-foreground select-none">
+                    همه پنجره‌ها بسته شدند. از دکمه‌های بالا برای افزودن مجدد استفاده کنید.
+                </div>
+            }
           />
-        </Panel>
-
-        <PanelResizeHandle className="w-1.5 bg-border/40 hover:bg-primary transition-colors flex items-center justify-center group focus:outline-none cursor-col-resize">
-            <div className="w-0.5 h-8 bg-muted-foreground/20 group-hover:bg-primary-foreground/50 rounded-full" />
-        </PanelResizeHandle>
-
-        <Panel id="right-main" defaultSize={40} minSize={20}>
-          <PanelGroup direction="vertical" autoSaveId={`grid-v-${currentTab.id}`}>
-            <Panel id="right-top" defaultSize={50} minSize={20}>
-              <Slot
-                index={1}
-                currentChartId={slots[1]}
-                availableCharts={chartOptions}
-                onSelect={handleSlotChange}
-              />
-            </Panel>
-
-            <PanelResizeHandle className="h-1.5 bg-border/40 hover:bg-primary transition-colors flex items-center justify-center group focus:outline-none cursor-row-resize">
-                 <div className="h-0.5 w-8 bg-muted-foreground/20 group-hover:bg-primary-foreground/50 rounded-full" />
-            </PanelResizeHandle>
-
-            <Panel id="right-bottom" defaultSize={50} minSize={20}>
-              <Slot
-                index={2}
-                currentChartId={slots[2]}
-                availableCharts={chartOptions}
-                onSelect={handleSlotChange}
-              />
-            </Panel>
-          </PanelGroup>
-        </Panel>
-      </PanelGroup>
+      )}
     </div>
-  )
-}
+  );
+};
