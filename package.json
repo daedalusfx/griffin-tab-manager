@@ -46,6 +46,7 @@
     "clsx": "^2.1.1",
     "lodash-es": "^4.17.21",
     "lucide-react": "^0.541.0",
+    "react-mosaic-component": "^6.1.1",
     "react-resizable-panels": "^3.0.6",
     "styled-components": "^6.1.19",
     "tailwind-merge": "^3.3.1",

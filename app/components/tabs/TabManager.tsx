@@ -24,36 +24,28 @@ import { TrashModal } from './TrashModal'
 // --- ثابت‌ها ---
 const BOUNDS_DEBOUNCE_MS = 350
 
-
-
-// تعریف تایپ برای منوی انتخاب رنگ
 type ColorMenuProps = {
   tabId: string
   position: { x: number; y: number }
 }
 
 export const TabManager = () => {
-  // --- استیت‌های محلی برای مودال‌ها ---
   const [isTrashModalOpen, setIsTrashModalOpen] = useState(false)
   const [isChartEditorModalOpen, setIsChartEditorModalOpen] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  const [editingChart, setEditingChart] = useState<SavedChart | null>(null) //
-  const [colorMenuProps, setColorMenuProps] = useState<ColorMenuProps | null>(
-    null, //
-  )
+  const [editingChart, setEditingChart] = useState<SavedChart | null>(null) 
+  const [colorMenuProps, setColorMenuProps] = useState<ColorMenuProps | null>(null)
   const [isBulkAddModalOpen, setIsBulkAddModalOpen] = useState(false) 
+  
   const sortTabsByColor = useTabStore((state) => state.sortTabsByColor)
   const inactivityTimeoutMinutes = useTabStore((state) => state.inactivityTimeoutMinutes)
   const isMultiViewOpen = useTabStore((state) => state.isMultiViewOpen)
   const toggleMultiView = useTabStore((state) => state.toggleMultiView)
 
   // --- هوک‌های IPC ---
-  const { viewSetActive, viewSetBounds, viewCreate, viewDestroy } =
-    useConveyor('window') //
+  // توجه: viewSetBounds حالا دو آرگومان می‌گیرد
+  const { viewSetActive, viewSetBounds, viewCreate, viewDestroy } = useConveyor('window') 
 
-  // --- انتخاب داده‌ها از استور تب (با useShallow) ---
-  // از useShallow استفاده می‌کنیم تا این کامپوننت فقط زمانی رندر شود
-  // که یکی از این سه متغیر واقعاً تغییر کند.
   const { activeTabs, deletedTabs, activeTabId } = useTabStore(
     useShallow((state) => ({
       activeTabs: state.activeTabs,
@@ -62,9 +54,6 @@ export const TabManager = () => {
     })),
   )
 
-  // --- انتخاب اکشن‌ها از استور تب (بدون useShallow) ---
-  // اکشن‌ها توابع ثابت هستند و نیازی به useShallow ندارند.
-  // انتخاب جداگانه آن‌ها بهینه‌ترین حالت است.
   const setActiveTabs = useTabStore((state) => state.setActiveTabs)
   const setActiveTabId = useTabStore((state) => state.setActiveTabId)
   const createTab = useTabStore((state) => state.createTab)
@@ -72,27 +61,20 @@ export const TabManager = () => {
   const restoreTab = useTabStore((state) => state.restoreTab)
   const updateTabColor = useTabStore((state) => state.updateTabColor)
 
-  // --- انتخاب داده‌ها از استور چارت (با useShallow) ---
   const savedCharts = useChartStore(useShallow((state) => state.savedCharts))
-
-  // --- انتخاب اکشن‌ها از استور چارت ---
   const addChart = useChartStore((state) => state.addChart)
   const updateChart = useChartStore((state) => state.updateChart)
   const deleteChart = useChartStore((state) => state.deleteChart)
 
-  // --- رفرنس‌ها ---
-  const contentWrapperRef = useRef<HTMLDivElement>(null) //
-  const didInitViewsRef = useRef<boolean>(false) //
+  const contentWrapperRef = useRef<HTMLDivElement>(null) 
+  const didInitViewsRef = useRef<boolean>(false) 
 
-
-// --- Garbage Collector   ---
+  // --- Garbage Collector ---
   useEffect(() => {
-    // اگر مقدار 0 باشد، یعنی این قابلیت غیرفعال است
     if (inactivityTimeoutMinutes === 0) return;
 
     const intervalId = setInterval(() => {
       const now = Date.now()
-      // تبدیل دقیقه به میلی‌ثانیه
       const timeoutMs = inactivityTimeoutMinutes * 60 * 1000 
       
       activeTabs.forEach((tab) => {
@@ -102,34 +84,23 @@ export const TabManager = () => {
           tab.lastAccessed
         ) {
           const timeDiff = now - tab.lastAccessed
-          
           if (timeDiff > timeoutMs) {
-            console.log(`[GC] Hibernating tab: ${tab.title}`)
             viewDestroy(tab.id)
           }
         }
       })
-    }, 60 * 1000) // چک کردن هر ۱ دقیقه
+    }, 60 * 1000) 
 
     return () => clearInterval(intervalId)
   }, [activeTabs, activeTabId, viewDestroy, inactivityTimeoutMinutes]) 
 
-
-  // --- کد جدید (Lazy Loading) ---
   useEffect(() => {
-    // فقط یکبار اجرا می‌شود تا فلگ initialization ست شود
     if (!didInitViewsRef.current) {
       didInitViewsRef.current = true
-      console.log('--- App Started: Lazy Loading Mode Active ---')
-      
-      // نکته مهم: ما دیگر اینجا هیچ تبی را نمی‌سازیم (viewCreate صدا زده نمی‌شود).
-      // وظیفه ساخت تب فعال به عهده useEffect بعدی است که به تغییرات activeTabId گوش می‌دهد.
-    
     }
   }, [])
   
-
-  // --- افکت مدیریت هوشمند و تنبل (Lazy) ویوها ---
+  // --- مدیریت Lazy Views ---
   useEffect(() => {
     const shouldHideMainView =
       isTrashModalOpen ||
@@ -156,7 +127,6 @@ export const TabManager = () => {
       }
       loadView()
     } else {
-      // برای تب‌های تنظیمات و مولتی‌ویو، ویوی مرورگر را مخفی کن
       viewSetActive(null)
     }
   }, [
@@ -171,82 +141,74 @@ export const TabManager = () => {
     viewSetActive,
   ])
 
-
-  // --- منطق مدیریت ابعاد (Bounds) (بدون تغییر) ---
+  // --- مدیریت ابعاد (Bounds) ---
   const sendBounds = useCallback(() => {
-    if (contentWrapperRef.current) {
+    if (contentWrapperRef.current && activeTabId) { // فقط اگر تب فعال داریم
       const rect = contentWrapperRef.current.getBoundingClientRect()
       if (rect.width < 10 || rect.height < 10) return
+      
       const bounds = {
         x: Math.round(rect.left),
         y: Math.round(rect.top),
         width: Math.round(rect.width),
         height: Math.round(rect.height),
       }
-      viewSetBounds(bounds)
+      
+      // تغییر مهم: ارسال ID تب فعال به همراه Bounds
+      viewSetBounds(activeTabId, bounds)
     }
-  }, [viewSetBounds]) //
+  }, [viewSetBounds, activeTabId]) 
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const debouncedSendBounds = useCallback(
     debounce(sendBounds, BOUNDS_DEBOUNCE_MS),
     [sendBounds],
-  ) //
+  ) 
 
   useLayoutEffect(() => {
     sendBounds()
-  }, [activeTabId, sendBounds]) //
+  }, [activeTabId, sendBounds]) 
 
   useResizeObserver({
     ref: contentWrapperRef,
     onResize: debouncedSendBounds,
-  }) //
+  }) 
 
   useEffect(() => {
     debouncedSendBounds()
     return () => {
       debouncedSendBounds.cancel()
     }
-  }, [isSidebarOpen, debouncedSendBounds]) //
+  }, [isSidebarOpen, debouncedSendBounds]) 
 
-  // --- توابع هندلر (بدون تغییر در منطق، فقط از اکشن‌های Zustand استفاده می‌کنند) ---
-
+  // --- هندلرها ---
   const handleOpenMultiView = () => {
-    // ایجاد تب جدید با تایپ 'multiview'
-    // نیازی به صدا زدن viewCreate برای این تب نیست چون از <webview> استفاده می‌کند
     createTab('داشبورد جدید', '', true, 'multiview')
     setIsSidebarOpen(false)
   }
 
   const handleOpenChart = async (title: string, url: string) => {
-    // ۱. تب ساخته می‌شود اما فعال نمی‌شود (activate = false)
     const newTab = createTab(title, url, false) 
-    
     if (newTab) {
-      // ۲. منتظر می‌مانیم تا BrowserView ساخته شود
       await viewCreate(newTab.id, newTab.url)
-      // ۳. حالا تب را فعال می‌کنیم
       setActiveTabId(newTab.id)
     }
     setIsSidebarOpen(false)
   }
   
   const handleDeleteTab = (tabId: string) => {
-    console.log(`[Renderer] 1. Deleting tab from Zustand: ${tabId}`);
     deleteTab(tabId)
-    console.log(`[Renderer] 1. Deleting tab from Zustand: ${tabId}`);
     viewDestroy(tabId)
-  } //
+  } 
 
   const handleAddNewChart = () => {
     setEditingChart(null)
     setIsChartEditorModalOpen(true)
-  } //
+  } 
 
   const handleEditChart = (chart: SavedChart) => {
     setEditingChart(chart)
     setIsChartEditorModalOpen(true)
-  } //
+  } 
 
   const handleEditorSubmit = (title: string, url: string) => {
     if (editingChart) {
@@ -255,50 +217,40 @@ export const TabManager = () => {
       addChart(title, url)
     }
     setIsChartEditorModalOpen(false)
-  } //
+  } 
 
   const handleToggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen)
-  } //
+  } 
 
   const handleSelectColor = (color: string | null) => {
     if (colorMenuProps) {
       updateTabColor(colorMenuProps.tabId, color)
     }
     setColorMenuProps(null)
-  } //
+  } 
 
   const handleCloseColorMenu = () => {
     setColorMenuProps(null)
-  } //
-
+  } 
 
   const handleBulkEditorSubmit = (charts: Array<{ title: string; url: string }>) => {
     charts.forEach(chart => {
-      addChart(chart.title, chart.url); //
+      addChart(chart.title, chart.url); 
     });
-    
     setIsBulkAddModalOpen(false);
   };
 
-
   const handleOpenSettings = () => {
-    // ۱. چک کن آیا قبلاً تب تنظیمات داریم؟
     const existingSettingsTab = activeTabs.find(t => t.type === 'settings')
-    
     if (existingSettingsTab) {
-      // اگر هست، فقط فعالش کن
       setActiveTabId(existingSettingsTab.id)
     } else {
-      // اگر نیست، بسازش
       createTab('تنظیمات', '', true, 'settings')
-      // نکته: آدرس url خالی است چون ویو ندارد
     }
-    
-    setIsSidebarOpen(false) // اگر سایدبار باز بود ببند
+    setIsSidebarOpen(false) 
   }
 
-  // پیدا کردن آبجکت تب فعال برای رندر
   const activeTabObj = activeTabs.find(t => t.id === activeTabId)
 
   return (

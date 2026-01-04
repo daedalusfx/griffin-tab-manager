@@ -1,16 +1,12 @@
 import { handle } from '@/lib/main/shared';
 import { electronAPI } from '@electron-toolkit/preload';
 import type { BrowserWindow } from 'electron';
-import { BrowserView, shell, WebContentsView } from 'electron';
+import { shell, WebContentsView } from 'electron';
 import { join } from 'path';
-// User Agent موزیلا
 
-
-// --- (کدهای مدیریت viewMap و ...) ---
-const viewMap = new Map<string, BrowserView>()
+const viewMap = new Map<string, WebContentsView>()
 let activeViewId: string | null = null
 let currentBounds: Electron.Rectangle = { x: 0, y: 0, width: 0, height: 0 }
-// ---
 
 export const registerWindowHandlers = (window: BrowserWindow) => {
   // Window operations
@@ -30,17 +26,19 @@ export const registerWindowHandlers = (window: BrowserWindow) => {
   handle('window-close', () => window.close())
   handle('window-maximize-toggle', () => (window.isMaximized() ? window.unmaximize() : window.maximize()))
 
+  // === View Logic ===
+
   handle('view-create', (tabId: string, url: string) => {
     if (viewMap.has(tabId)) return;
 
-    const view:any = new WebContentsView({
+    const view = new WebContentsView({
       webPreferences: {
         partition: 'persist:tab-session',
         preload: join(__dirname, '../preload/preload.js'),
         contextIsolation: false,
         sandbox: false,
       },
-    })
+    }) as any
 
     view.setBackgroundColor('#00000000');
     view.webContents.loadURL(url)
@@ -48,16 +46,23 @@ export const registerWindowHandlers = (window: BrowserWindow) => {
     viewMap.set(tabId, view)
   })
 
+  // این هندلر برای حالت "تک ویو" استفاده می‌شود
   handle('view-set-active', (tabId: string | null) => {
+    // 1. پاکسازی ویوی فعال قبلی (اگر وجود داشت)
     if (activeViewId && viewMap.has(activeViewId)) {
-      const oldView : any = viewMap.get(activeViewId)!
-      window.contentView.removeChildView(oldView)
+      const oldView = viewMap.get(activeViewId)! as any
+      try { window.contentView.removeChildView(oldView) } catch (e) {}
       oldView.webContents.setBackgroundThrottling(true)
     }
 
+    // 2. تنظیم ویوی جدید
     if (tabId && viewMap.has(tabId)) {
-      const newView:any = viewMap.get(tabId)!
-      window.contentView.addChildView(newView)
+      const newView = viewMap.get(tabId)! as any
+      // ابتدا همه ویوهای مزاحم احتمالی را حذف کن (اختیاری ولی امن‌تر)
+      // window.contentView.children.forEach(...) 
+      
+      try { window.contentView.addChildView(newView) } catch(e) {} // ممکنه قبلا اد شده باشه
+      
       newView.setBounds(currentBounds)
       newView.webContents.setBackgroundThrottling(false)
       newView.webContents.focus()
@@ -67,25 +72,19 @@ export const registerWindowHandlers = (window: BrowserWindow) => {
     }
   })
 
-
-
   handle('view-destroy', (tabId: string) => {
     if (viewMap.has(tabId)) {
-      const view:any = viewMap.get(tabId)!
+      const view = viewMap.get(tabId)! as any
       
       if (activeViewId === tabId) {
         activeViewId = null
       }
       
-      try {
-         window.contentView.removeChildView(view)
-      } catch (e) { /* ignore */ }
+      try { window.contentView.removeChildView(view) } catch (e) { }
 
-      // --- اصلاح شده: استفاده از close() به جای destroy() ---
       try {
         if (!view.webContents.isDestroyed()) {
           view.webContents.stop()
-          // destroy() وجود ندارد، close() کار مشابه را انجام می‌دهد
           view.webContents.close() 
         }
       } catch (error) {
@@ -93,18 +92,36 @@ export const registerWindowHandlers = (window: BrowserWindow) => {
       }
 
       viewMap.delete(tabId)
-      console.log(`[Main] 🗑️ Successfully destroyed WebContentsView: ${tabId}`)
     }
   })
 
-  handle('view-set-bounds', (bounds) => {
-    currentBounds = bounds
-    if (activeViewId && viewMap.has(activeViewId)) {
-      const view = viewMap.get(activeViewId)!;
+  // هندلر جدید برای مخفی کردن ویو (مثلاً وقتی کاشی بسته می‌شود)
+  handle('view-hide', (tabId: string) => {
+    if (viewMap.has(tabId)) {
+      const view = viewMap.get(tabId)! as any
+      try { window.contentView.removeChildView(view) } catch (e) { }
+    }
+  })
+
+  // آپدیت شده: حالا ID می‌گیرد و ویو را به پنجره اضافه می‌کند (مناسب برای Mosaic)
+  handle('view-set-bounds', (tabId: string, bounds: Electron.Rectangle) => {
+    // ذخیره باندز کلی (برای ویوی فعال تک‌حالته)
+    if (tabId === activeViewId) {
+        currentBounds = bounds
+    }
+
+    if (viewMap.has(tabId)) {
+      const view = viewMap.get(tabId)! as any
+      
+      // اطمینان از اینکه ویو به پنجره چسبیده است
+      // (addChildView در الکترون‌های جدید اگر ویو قبلا اد شده باشد، کاری نمی‌کند که خوب است)
+      try { window.contentView.addChildView(view) } catch (e) {}
+      
       view.setBounds(bounds)
     }
   })
-  // Web content operations
+
+  // ... (Web content handlers unchanged)
   const webContents = window.webContents
   handle('web-undo', () => webContents.undo())
   handle('web-redo', () => webContents.redo())
@@ -123,11 +140,10 @@ export const registerWindowHandlers = (window: BrowserWindow) => {
   handle('web-open-url', (url: string) => shell.openExternal(url))
 
   window.on('closed', () => {
-    console.log('[Main] Window closed, cleaning up all views...')
-    viewMap.forEach((view) => {
+    viewMap.forEach((view: any) => {
       try {
         if (!view.webContents.isDestroyed()) {
-          view.webContents.close() // اینجا هم close
+          view.webContents.close()
         }
       } catch (e) {}
     })
