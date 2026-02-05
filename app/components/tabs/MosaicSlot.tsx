@@ -2,6 +2,7 @@ import { useConveyor } from '@/app/hooks/use-conveyor';
 import { debounce } from 'lodash-es';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import useResizeObserver from 'use-resize-observer';
+import { useTabStore } from '@/app/hooks/useTabStore'; 
 
 interface MosaicSlotProps {
   chartId: string;
@@ -11,9 +12,27 @@ interface MosaicSlotProps {
 
 export const MosaicSlot = ({ chartId, url, title }: MosaicSlotProps) => {
   const { viewCreate, viewSetBounds, viewHide } = useConveyor('window');
+  const touchTab = useTabStore((state) => state.touchTab); 
   const slotRef = useRef<HTMLDivElement>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   
+
+
+
+  useEffect(() => {
+    // بلافاصله پس از لود شدن، یک بار زمان را آپدیت کن
+    touchTab(chartId);
+
+    // هر 60 ثانیه یکبار به استور بگو که من هنوز فعالم
+    const intervalId = setInterval(() => {
+      touchTab(chartId);
+    }, 60 * 1000);
+
+    return () => clearInterval(intervalId);
+  }, [chartId, touchTab]);
+
+
+
 
   // ایجاد ویو فقط یک بار
   useEffect(() => {

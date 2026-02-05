@@ -41,6 +41,8 @@ interface TabStoreState {
   updateTabGridSlots: (tabId: string, slots: (string | null)[]) => void
 
   setInactivityTimeoutMinutes: (minutes: number) => void
+  touchTab: (tabId: string) => void
+
 }
 
 // یک نام واحد برای ذخیره‌سازی کل استور تب‌ها در localStorage
@@ -83,6 +85,12 @@ export const useTabStore = create<TabStoreState>()(
           return { activeTabs: tabs, activeTabId: newActiveId }
         })
       },
+
+      touchTab: (tabId) => set((state) => ({
+        activeTabs: state.activeTabs.map((tab) => 
+          tab.id === tabId ? { ...tab, lastAccessed: Date.now() } : tab
+        )
+      })),
 
       setActiveTabId: (id) => set((state) => ({
         activeTabId: id,

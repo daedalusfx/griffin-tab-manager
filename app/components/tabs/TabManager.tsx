@@ -182,7 +182,7 @@ export const TabManager = () => {
 
   // --- هندلرها ---
   const handleOpenMultiView = () => {
-    createTab('داشبورد جدید', '', true, 'multiview')
+    createTab('داشبورد چندگانه', '', true, 'multiview')
     setIsSidebarOpen(false)
   }
 
