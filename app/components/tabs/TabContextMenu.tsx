@@ -76,14 +76,14 @@ export const TabContextMenu = ({
           <RefreshCwIcon className="w-4 h-4 text-muted-foreground" />
           <span>بارگذاری مجدد</span>
         </button>
-
+{/* 
         <button
           onClick={() => onAction('hibernate')}
           className="flex items-center gap-2 w-full px-2 py-2 text-sm text-foreground rounded hover:bg-accent hover:text-accent-foreground transition-colors text-right group"
         >
           <MoonIcon className="w-4 h-4 text-muted-foreground group-hover:text-indigo-400 transition-colors" />
           <span>به خواب رفتن (Hibernate)</span>
-        </button>
+        </button> */}
       </div>
     </motion.div>
   )
