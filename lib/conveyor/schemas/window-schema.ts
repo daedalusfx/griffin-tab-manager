@@ -127,4 +127,9 @@ export const windowIpcSchema = {
     args: z.tuple([z.string(), boundsSchema]), // (tabId, bounds)
     return: z.void(),
   },
+
+  'view-reload': {
+    args: z.tuple([z.string()]), // شناسه تب را می‌گیرد
+    return: z.void(),
+  },
 }
