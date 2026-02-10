@@ -14,6 +14,8 @@ export interface Tab {
   gridSlots?: (string | null)[]
 
   lastAccessed?: number
+
+  layout?: any
 }
 
 /**
@@ -42,6 +44,8 @@ interface TabStoreState {
 
   setInactivityTimeoutMinutes: (minutes: number) => void
   touchTab: (tabId: string) => void
+
+  updateTabLayout: (tabId: string, layout: any) => void 
 
 }
 
@@ -91,6 +95,14 @@ export const useTabStore = create<TabStoreState>()(
           tab.id === tabId ? { ...tab, lastAccessed: Date.now() } : tab
         )
       })),
+
+      updateTabLayout: (tabId, layout) => {
+        set((state) => ({
+          activeTabs: state.activeTabs.map((tab) =>
+            tab.id === tabId ? { ...tab, layout: layout } : tab
+          ),
+        }))
+      },
 
       setActiveTabId: (id) => set((state) => ({
         activeTabId: id,

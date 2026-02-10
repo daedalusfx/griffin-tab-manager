@@ -1,5 +1,5 @@
-import { Tab } from '@/app/hooks/useTabStore';
-import React, { useMemo, useState } from 'react';
+import { useTabStore, Tab } from '@/app/hooks/useTabStore';
+import React, { useMemo } from 'react';
 import { Mosaic, MosaicNode, MosaicWindow } from 'react-mosaic-component';
 import 'react-mosaic-component/react-mosaic-component.css';
 import { ChartSelector } from './ChartSelector';
@@ -13,19 +13,37 @@ interface MultiViewGridProps {
 export type MosaicKey = string;
 
 export const MultiViewGrid = ({ currentTab, allTabs }: MultiViewGridProps) => {
+  const updateTabLayout = useTabStore((state) => state.updateTabLayout);
+
   const availableCharts = useMemo(() => 
     allTabs.filter(t => t.type !== 'multiview' && t.type !== 'settings'),
   [allTabs]);
 
-  const [layout, setLayout] = useState<MosaicNode<MosaicKey> | null>(() => {
-      if (availableCharts.length === 0) return null;
-      if (availableCharts.length === 1) return availableCharts[0].id;
-      return {
-          direction: 'row',
-          first: availableCharts[0].id,
-          second: availableCharts[1].id,
-      };
-  });
+  // محاسبه لی‌اوت اولیه یا خواندن از استور
+  const layoutValue = useMemo(() => {
+    // 1. اگر قبلاً لی‌اوت ذخیره شده، همان را برگردان
+    if (currentTab.layout) {
+      return currentTab.layout;
+    }
+
+    // 2. اگر ذخیره نشده، یک لی‌اوت پیش‌فرض بساز
+    if (availableCharts.length === 0) return null;
+    if (availableCharts.length === 1) return availableCharts[0].id;
+    
+    // پیش‌فرض: دو تا چارت اول کنار هم
+    return {
+        direction: 'row',
+        first: availableCharts[0].id,
+        second: availableCharts[1].id,
+    };
+  }, [currentTab.layout, availableCharts]);
+
+
+  // هندل کردن تغییرات (دراگ دراپ یا تغییر سایز یا تغییر چارت)
+  const handleChange = (newLayout: MosaicNode<MosaicKey> | null) => {
+    // بلافاصله در استور ذخیره می‌کنیم
+    updateTabLayout(currentTab.id, newLayout);
+  };
 
   return (
     <div className="w-full h-full bg-background mosaic-theme-dark" dir="ltr">
@@ -58,11 +76,6 @@ export const MultiViewGrid = ({ currentTab, allTabs }: MultiViewGridProps) => {
                                 allTabs={allTabs} 
                             /> as any
                         }
-                        // کنترل‌های تولبار (مثل دکمه بستن و اسپلیت)
-                        toolbarControls={[
-                             // اگر بخواهید دکمه‌های پیش‌فرض را نگه دارید یا کاستوم کنید
-                             // به صورت پیش‌فرض دکمه اسپلیت و بستن وجود دارد
-                        ]}
                     >
                         <MosaicSlot 
                             chartId={chart.id} 
@@ -72,8 +85,9 @@ export const MultiViewGrid = ({ currentTab, allTabs }: MultiViewGridProps) => {
                     </MosaicWindow>
                 );
             }}
-            value={layout}
-            onChange={setLayout}
+            // مقدار را مستقیماً از محاسبات بالا می‌گیریم
+            value={layoutValue}
+            onChange={handleChange}
             className="mosaic-blueprint-theme"
             zeroStateView={
                 <div className="flex items-center justify-center h-full text-muted-foreground select-none">
