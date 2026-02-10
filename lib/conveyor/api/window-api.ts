@@ -40,6 +40,7 @@ export class WindowApi extends ConveyorApi {
   viewDestroy = (tabId: string) => this.invoke('view-destroy', tabId)
   viewHide = (tabId: string) => this.invoke('view-hide', tabId) // <--- جدید
   
-  // <--- آپدیت شده
   viewSetBounds = (tabId: string, bounds: ViewBounds) => this.invoke('view-set-bounds', tabId, bounds)
+
+  viewReload = (tabId: string) => this.invoke('view-reload', tabId)
 }

@@ -121,6 +121,14 @@ export const registerWindowHandlers = (window: BrowserWindow) => {
     }
   })
 
+  handle('view-reload', (tabId: string) => {
+    if (viewMap.has(tabId)) {
+      const view = viewMap.get(tabId)! as any
+      // فقط محتوای همان تب را رفرش می‌کند
+      view.webContents.reload()
+    }
+  })
+
   // ... (Web content handlers unchanged)
   const webContents = window.webContents
   handle('web-undo', () => webContents.undo())

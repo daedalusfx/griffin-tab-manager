@@ -14,7 +14,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { BulkChartModal } from './BulkChartModal'
 import { ChartEditorModal } from './ChartEditorModal'
 import { ChartListSidebar } from './ChartListSidebar'
-import { ColorPickerMenu } from './ColorPickerMenu'
+import { TabContextMenu } from './TabContextMenu'
 import { MultiViewGrid } from './MultiViewGrid'
 import { SettingsPage } from './SettingsPage'
 import { TabBar } from './TabBar'
@@ -44,7 +44,7 @@ export const TabManager = () => {
 
   // --- هوک‌های IPC ---
   // توجه: viewSetBounds حالا دو آرگومان می‌گیرد
-  const { viewSetActive, viewSetBounds, viewCreate, viewDestroy } = useConveyor('window') 
+  const { viewSetActive, viewSetBounds, viewCreate, viewDestroy, viewReload } = useConveyor('window')
 
   const { activeTabs, deletedTabs, activeTabId } = useTabStore(
     useShallow((state) => ({
@@ -251,6 +251,30 @@ export const TabManager = () => {
     setIsSidebarOpen(false) 
   }
 
+
+
+  // --- هندل کردن اکشن‌های منو ---
+  const handleContextMenuAction = (action: 'reload' | 'hibernate') => {
+    if (!colorMenuProps) return;
+    const { tabId } = colorMenuProps;
+
+    if (action === 'reload') {
+      // فراخوانی متد جدیدی که ساختیم
+      viewReload(tabId);
+    } 
+    else if (action === 'hibernate') {
+      // نابود کردن ویو (آزاد کردن رم)
+      viewDestroy(tabId);
+      
+      // نکته: اگر تب فعال را Hibernate کنیم، صفحه خالی می‌شود.
+      // کاربر باید روی تب دیگری کلیک کند یا دوباره روی همین تب بزند تا لود شود.
+      // این رفتار برای "آزاد کردن رم" طبیعی است.
+    }
+    
+    // بستن منو بعد از کلیک
+    setColorMenuProps(null);
+  }
+
   const activeTabObj = activeTabs.find(t => t.id === activeTabId)
 
   return (
@@ -319,10 +343,12 @@ export const TabManager = () => {
       />
 
       {colorMenuProps && (
-        <ColorPickerMenu
+        <TabContextMenu
           position={colorMenuProps.position}
+          currentTabId={colorMenuProps.tabId}
           onClose={handleCloseColorMenu}
           onSelectColor={handleSelectColor}
+          onAction={handleContextMenuAction} 
         />
       )}
     </div>
