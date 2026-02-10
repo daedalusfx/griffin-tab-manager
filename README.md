@@ -7,6 +7,7 @@ A specialized Electron & React application designed for managing and viewing web
 This application is built with a modern tech stack and features an advanced, type-safe IPC core. It's specifically hardened to bypass bot-detection on websites by modifying the `BrowserView` user-agent and patching Electron's preload environment.
 
 
+![Logo](/assets/logo.png)
 ![Preview](/screenshots/multi_tab.png)
 ![Preview](/screenshots/normal_tab.png)
 ![Preview](/screenshots/settings_tab.png)
