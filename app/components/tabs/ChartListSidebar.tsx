@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import React from 'react';
 import { Button } from '../ui/button';
+import { useTranslation } from 'react-i18next';
 
 interface ChartListSidebarProps {
   isOpen: boolean
@@ -32,20 +33,18 @@ export const ChartListSidebar = ({
   onAddNew,
   onAddNewBulk
 }: ChartListSidebarProps) => {
+ const {t} = useTranslation()
   return (
     <>
-      {/* دکمه Toggle شناور حذف شد */}
-      
-      {/* از display: flex استفاده می‌کنیم چون خود کامپوننت 
-        flex-direction: column دارد 
-      */}
       <aside
         className="chart-list-sidebar"
         style={{ display: isOpen ? 'flex' : 'none' }}
       >
         {/* هدر سایدبار */}
         <div className="flex justify-between items-center p-4 border-b border-border">
-          <h3 className="text-lg font-semibold">لیست چارت‌ها</h3>
+          <h3 className="text-lg font-semibold">
+            {t('sidebar.chart_list')}
+            </h3>
           <button
             type="button"
             onClick={onToggle}
@@ -59,18 +58,15 @@ export const ChartListSidebar = ({
         <div className="p-4 flex-1 overflow-y-auto">
           {charts.length === 0 ? (
             <p className="text-muted-foreground text-center py-8">
-              لیست چارت‌ها خالی است.
+             {t('sidebar.empty_list')}
             </p>
           ) : (
             <ul className="space-y-2">
-              {/* AnimatePresence حذف شد */}
               {charts.map((chart) => (
-                <li // <-- motion.li به li تغییر کرد
+                <li
                   key={chart.id}
-                  // props انیمیشن حذف شدند
                   className="flex justify-between items-center p-3 bg-muted/50 rounded-md"
                 >
-                  {/* اطلاعات چارت */}
                   <div className="truncate flex-1 mr-2">
                     <span className="font-medium text-sm">{chart.title}</span>
                     <p className="text-xs text-muted-foreground truncate" dir="ltr">
@@ -84,7 +80,7 @@ export const ChartListSidebar = ({
                       size="icon"
                       className="w-8 h-8 text-destructive/80 hover:text-destructive"
                       onClick={() => onDeleteChart(chart.id)}
-                      title="حذف از لیست"
+                      title={t('sidebar.delete_from_list')}
                     >
                       <Trash2Icon className="w-4 h-4" />
                     </Button>
@@ -93,7 +89,7 @@ export const ChartListSidebar = ({
                       size="icon"
                       className="w-8 h-8"
                       onClick={() => onEditChart(chart)}
-                      title="ویرایش"
+                      title={t('sidebar.edit')}
                     >
                       <Edit2Icon className="w-4 h-4" />
                     </Button>
@@ -102,14 +98,13 @@ export const ChartListSidebar = ({
                       size="icon"
                       className="w-8 h-8 text-green-500"
                       onClick={() => onOpenChart(chart.title, chart.url)}
-                      title="باز کردن در تب جدید"
+                      title={t('sidebar.open_in_new_tab')}
                     >
                       <PlayCircleIcon className="w-4 h-4" />
                     </Button>
                   </div>
                 </li>
               ))}
-              {/* AnimatePresence حذف شد */}
             </ul>
           )}
         </div>
@@ -123,7 +118,7 @@ export const ChartListSidebar = ({
             className="gap-1 flex-1"
           >
             <PlusIcon className="w-4 h-4" />
-            افزودن تکی
+            {t('sidebar.add_single')}
           </Button>
           
           <Button
@@ -131,10 +126,10 @@ export const ChartListSidebar = ({
             variant="outline"
             onClick={onAddNewBulk}
             className="gap-1 flex-1"
-            title="افزودن گروهی از لیست"
+            title={t('sidebar.add_bulk')}
           >
             <CopyPlusIcon className="w-4 h-4" />
-            افزودن گروهی
+{t('modals.bulk_add.url_list')}
           </Button>
         </div>
       </aside>

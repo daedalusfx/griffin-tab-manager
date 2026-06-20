@@ -3,6 +3,7 @@ import { debounce } from 'lodash-es';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import useResizeObserver from 'use-resize-observer';
 import { useTabStore } from '@/app/hooks/useTabStore'; 
+import { t } from 'i18next';
 
 interface MosaicSlotProps {
   chartId: string;
@@ -87,7 +88,9 @@ export const MosaicSlot = ({ chartId, url, title }: MosaicSlotProps) => {
       {!isLoaded && (
         <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground bg-card/50 z-10">
           <span className="loading-spinner mb-2" /> {/* می‌توانید یک اسپینر اضافه کنید */}
-          <span className="text-xs">در حال بارگذاری...</span>
+          <span className="text-xs">
+      {t('common.loading')}            
+            </span>
         </div>
       )}
     </div>

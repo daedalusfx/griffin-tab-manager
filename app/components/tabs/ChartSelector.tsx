@@ -1,6 +1,7 @@
 import { Tab } from '@/app/hooks/useTabStore';
 import { ChevronDownIcon } from 'lucide-react';
 import React, { useContext } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MosaicBranch, MosaicContext, MosaicPath } from 'react-mosaic-component';
 import styled from 'styled-components';
 
@@ -64,13 +65,14 @@ export const ChartSelector = ({ currentChartId, path, allTabs }: ChartSelectorPr
   };
 
   const currentTab = allTabs.find(t => t.id === currentChartId);
-
+const {t} = useTranslation()
   return (
-    <Wrapper title="تغییر چارت">
+    <Wrapper title={t('tabs.change_chart')}
+    >
       {/* لایه نمایشی (متن و آیکون) */}
       <div className="flex items-center gap-2 pointer-events-none z-10 w-full">
         <span className="truncate text-xs font-medium">
-          {currentTab?.title || 'انتخاب...'}
+          {currentTab?.title || t('tabs.select_chart') }
         </span>
         <ChevronDownIcon className="w-3 h-3 opacity-70 shrink-0" />
       </div>
@@ -81,7 +83,7 @@ export const ChartSelector = ({ currentChartId, path, allTabs }: ChartSelectorPr
         onChange={handleChange}
         onClick={(e) => e.stopPropagation()} // جلوگیری از تداخل با درگ پنجره
       >
-        <optgroup label="چارت‌های موجود">
+        <optgroup label={t('tabs.available_charts')}>
           {allTabs
             .filter((t) => t.type !== 'multiview' && t.type !== 'settings')
             .map((tab) => (

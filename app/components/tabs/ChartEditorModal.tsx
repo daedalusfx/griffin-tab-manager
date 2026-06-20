@@ -1,15 +1,15 @@
 import { Button } from '@/app/components/ui/button'
 import { SavedChart } from '@/app/hooks/useChartStore'
 import { AnimatePresence, motion } from 'framer-motion'
-import { XIcon } from 'lucide-react'; // <-- استفاده از Lucide
+import { t } from 'i18next';
+import { XIcon } from 'lucide-react'; 
+import React from 'react';
 import { FormEvent, useEffect, useState } from 'react'
 
 interface ChartEditorModalProps {
   isOpen: boolean
   onClose: () => void
-  // تابع onSubmit حالا یک آبجکت کامل می‌گیرد
   onSubmit: (title: string, url: string) => void
-  // برای ویرایش، چارت فعلی را دریافت می‌کند
   chartToEdit?: SavedChart | null
 }
 
@@ -67,7 +67,7 @@ export const ChartEditorModal = ({
             <form onSubmit={handleSubmit}>
               <div className="flex justify-between items-center p-4 border-b border-border">
                 <h3 className="text-lg font-semibold">
-                  {isEditMode ? 'ویرایش چارت' : 'افزودن چارت به لیست'}
+                  {isEditMode ? t('modals.chart_editor.edit_title') : t('modals.chart_editor.add_title')}
                 </h3>
                 <button
                   type="button"
@@ -80,20 +80,20 @@ export const ChartEditorModal = ({
 
               <div className="p-4 space-y-4">
                 <div>
-                  <label htmlFor="tab-title" className="tab-label">عنوان</label>
+                  <label htmlFor="tab-title" className="tab-label">{t('common.title')}</label>
                   <input
                     id="tab-title"
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     className="tab-input"
-                    placeholder="مثلا: چارت EUR/JPY"
+                    placeholder={t('modals.chart_editor.placeholder_title')}
                     required
                     autoFocus
                   />
                 </div>
                 <div>
-                  <label htmlFor="tab-url" className="tab-label">آدرس (URL)</label>
+                  <label htmlFor="tab-url" className="tab-label">(URL)</label>
                   <input
                     id="tab-url"
                     type="url"
@@ -109,7 +109,7 @@ export const ChartEditorModal = ({
 
               <div className="flex justify-end p-4 border-t border-border">
                 <Button type="submit">
-                  {isEditMode ? 'ذخیره تغییرات' : 'افزودن به لیست'}
+                  {isEditMode ? t('common.save_changes') : t('common.add_to_list')}
                 </Button>
               </div>
             </form>

@@ -2,6 +2,7 @@ import { Tab } from '@/app/hooks/useTabStore';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CheckIcon, SearchIcon, XIcon } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 interface ChartPickModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -28,6 +29,7 @@ export const ChartPickModal = ({
     const matchesSearch = t.title.toLowerCase().includes(search.toLowerCase());
     return isValidType && matchesSearch;
   });
+  const {t} = useTranslation()
 
   // پاک کردن جستجو هنگام باز شدن مجدد
   useEffect(() => {
@@ -53,7 +55,10 @@ export const ChartPickModal = ({
           >
             {/* Header */}
             <div className="flex items-center justify-between p-3 border-b border-border">
-              <span className="font-semibold text-sm">انتخاب نمودار</span>
+              <span className="font-semibold text-sm">
+
+      {t('modals.chart_picker.title')}          
+      </span>
               <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
                 <XIcon className="w-4 h-4" />
               </button>
@@ -65,7 +70,7 @@ export const ChartPickModal = ({
                 <SearchIcon className="absolute right-2 top-2.5 w-4 h-4 text-muted-foreground" />
                 <input
                   type="text"
-                  placeholder="جستجوی نماد..."
+                  placeholder={t('modals.chart_picker.search')}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="w-full bg-muted/50 text-sm rounded-md py-2 pr-8 pl-3 focus:outline-none focus:ring-1 focus:ring-ring"
@@ -78,7 +83,7 @@ export const ChartPickModal = ({
             <div className="overflow-y-auto p-1 flex-1">
               {filteredTabs.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground text-xs">
-                  موردی یافت نشد.
+                  {t('modals.chart_picker.not_found')}
                 </div>
               ) : (
                 <ul className="space-y-1">

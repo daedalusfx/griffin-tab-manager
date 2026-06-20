@@ -7,6 +7,8 @@ import {
   CloseIcon,
   PlusCircleIcon,
 } from './icons'
+import React from 'react'
+import { t } from 'i18next'
 
 // تعریف نوع داده برای هر فیلد در مودال
 interface FieldState {
@@ -131,7 +133,9 @@ export const NewTabModal = ({ isOpen, onClose, onSubmit }: NewTabModalProps) => 
             <form onSubmit={handleSubmit}>
               {/* هدر مودال */}
               <div className="flex justify-between items-center p-4 border-b border-border">
-                <h3 className="text-lg font-semibold">افزودن لیست تب‌ها</h3>
+                <h3 className="text-lg font-semibold">
+      {t('tabs.new_tab')}
+                  </h3>
                 <button
                   type="button"
                   onClick={onClose}
@@ -160,8 +164,8 @@ export const NewTabModal = ({ isOpen, onClose, onSubmit }: NewTabModalProps) => 
                       >
                         <span>
                           {field.isCollapsed
-                            ? field.title || `تب ${index + 1}`
-                            : `تب ${index + 1}`}
+                            ? field.title || `tab ${index + 1}`
+                            : `tab ${index + 1}`}
                         </span>
                         <div className="flex items-center gap-2">
                           {fields.length > 1 && (
@@ -197,7 +201,8 @@ export const NewTabModal = ({ isOpen, onClose, onSubmit }: NewTabModalProps) => 
                           >
                             <div>
                               <label htmlFor={`title-${field.id}`} className="tab-label">
-                                عنوان
+                                
+                        {t('common.title')}
                               </label>
                               <input
                                 id={`title-${field.id}`}
@@ -211,13 +216,13 @@ export const NewTabModal = ({ isOpen, onClose, onSubmit }: NewTabModalProps) => 
                                   )
                                 }
                                 className="tab-input"
-                                placeholder="مثلا: گوگل"
+                                placeholder={t('modals.chart_editor.placeholder_title')}
                                 required
                               />
                             </div>
                             <div>
                               <label htmlFor={`url-${field.id}`} className="tab-label">
-                                آدرس (URL)
+                        {t('common.url')}
                               </label>
                               <input
                                 id={`url-${field.id}`}
@@ -253,6 +258,7 @@ export const NewTabModal = ({ isOpen, onClose, onSubmit }: NewTabModalProps) => 
                   className="gap-1"
                 >
                   <PlusCircleIcon className="w-5 h-5" />
+                  
                   افزودن ردیف
                 </Button>
                 <Button type="submit">ذخیره همه تب‌ها</Button>

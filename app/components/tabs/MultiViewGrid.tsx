@@ -4,6 +4,7 @@ import { Mosaic, MosaicNode, MosaicWindow } from 'react-mosaic-component';
 import 'react-mosaic-component/react-mosaic-component.css';
 import { ChartSelector } from './ChartSelector';
 import { MosaicSlot } from './MosaicSlot';
+import { t } from 'i18next';
 
 interface MultiViewGridProps {
   currentTab: Tab
@@ -49,7 +50,7 @@ export const MultiViewGrid = ({ currentTab, allTabs }: MultiViewGridProps) => {
     <div className="w-full h-full bg-background mosaic-theme-dark" dir="ltr">
       {availableCharts.length === 0 ? (
           <div className="flex items-center justify-center h-full text-muted-foreground">
-              هیچ چارت بازی وجود ندارد.
+      {t('tabs.no_open_charts')}
           </div>
       ) : (
           <Mosaic<MosaicKey>
@@ -60,7 +61,7 @@ export const MultiViewGrid = ({ currentTab, allTabs }: MultiViewGridProps) => {
                 if (!chart) return (
                     <MosaicWindow<MosaicKey> path={path} title="حذف شده">
                          <div className="flex items-center justify-center h-full text-destructive">
-                             چارت بسته شده
+                       {t('tabs.chart_closed')}
                          </div>
                     </MosaicWindow>
                 );
@@ -91,7 +92,7 @@ export const MultiViewGrid = ({ currentTab, allTabs }: MultiViewGridProps) => {
             className="mosaic-blueprint-theme"
             zeroStateView={
                 <div className="flex items-center justify-center h-full text-muted-foreground select-none">
-                    همه پنجره‌ها بسته شدند. از دکمه‌های بالا برای افزودن مجدد استفاده کنید.
+             {t('tabs.all_windows_closed')}
                 </div>
             }
           />

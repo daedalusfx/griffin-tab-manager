@@ -3,6 +3,7 @@ import { AnimatePresence, motion, Reorder } from 'framer-motion';
 import { LayoutDashboard, ListIcon, PaintBucketIcon, Settings, TrashIcon } from 'lucide-react';
 import React from 'react';
 import { TabItem } from './TabItem';
+import { useTranslation } from 'react-i18next';
 
 interface TabBarProps {
   activeTabs: Tab[]
@@ -39,6 +40,9 @@ isMultiViewActive,
 onOpenMultiView,
 onOpenSettings
 }: TabBarProps) => {
+
+    const { t, i18n } = useTranslation();
+  
   return (
     <header className="tab-header">
       <nav className="tab-bar-nav">
@@ -49,7 +53,7 @@ onOpenSettings
           onReorder={setActiveTabs}
           className="flex"
           layoutScroll
-          style={{ overflowY: 'hidden' }} // جلوگیری از پرش عمودی
+          style={{ overflowY: 'hidden' }}
         >
           <AnimatePresence initial={false}>
             {activeTabs.map((tab) => (
@@ -67,13 +71,11 @@ onOpenSettings
         </Reorder.Group>
       </nav>
 
-      {/* دکمه‌های کنترل */}
       <div className="tab-controls">
-        {/* --- این دکمه جایگزین شد --- */}
         <button
           id="chart-list-btn"
           className="tab-icon-btn"
-          title="لیست چارت‌ها"
+          title={t('sidebar.chart_list')}
           onClick={onOpenChartList}
         >
           <ListIcon className="w-5 h-5" />
@@ -81,14 +83,14 @@ onOpenSettings
 
         <button
           className="tab-icon-btn"
-          title="مرتب‌سازی بر اساس رنگ"
-          onClick={onSortTabs}
+          title={t('tab_bar.sort_by_color')}
+                    onClick={onSortTabs}
         >
           <PaintBucketIcon className="w-5 h-5" />
         </button>
         <button
   className="tab-icon-btn"
-  title="باز کردن داشبورد چندتایی"
+  title={t('tab_bar.open_multiview')}
   onClick={onOpenMultiView}
 >
   <LayoutDashboard className="w-5 h-5" />
@@ -96,7 +98,7 @@ onOpenSettings
 
 <button
           className="tab-icon-btn"
-          title="تنظیمات"
+          title={t('tab_bar.settings')}
           onClick={onOpenSettings}
         >
           <Settings className="w-5 h-5" />
@@ -104,7 +106,7 @@ onOpenSettings
         <button
           id="trash-btn"
           className="relative tab-icon-btn"
-          title="تب‌های حذف شده"
+          title={t('tab_bar.deleted_tabs')}
           onClick={onOpenTrash}
         >
           <TrashIcon className="w-5 h-5" />

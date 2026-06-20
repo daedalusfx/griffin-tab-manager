@@ -20,6 +20,7 @@ import { SettingsPage } from './SettingsPage'
 import { TabBar } from './TabBar'
 import { TabContent } from './TabContent'
 import { TrashModal } from './TrashModal'
+import { t } from 'i18next'
 
 // --- ثابت‌ها ---
 const BOUNDS_DEBOUNCE_MS = 350
@@ -182,7 +183,7 @@ export const TabManager = () => {
 
   // --- هندلرها ---
   const handleOpenMultiView = () => {
-    createTab('داشبورد چندگانه', '', true, 'multiview')
+    createTab(t('tabs.multiview_dashboard'), '', true, 'multiview')
     setIsSidebarOpen(false)
   }
 

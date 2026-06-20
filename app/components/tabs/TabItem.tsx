@@ -1,6 +1,7 @@
 import { Tab } from '@/app/hooks/useTabStore'
 import { Reorder, useMotionValue } from 'framer-motion'
 import { XIcon } from 'lucide-react'
+import React from 'react'
 import styled, { css } from 'styled-components'
 
 // --- تعریف Props ---

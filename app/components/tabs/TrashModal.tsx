@@ -2,6 +2,8 @@ import { Button } from '@/app/components/ui/button'
 import { Tab } from '@/app/hooks/useTabStore'
 import { AnimatePresence, motion } from 'framer-motion'
 import { CloseIcon } from './icons'
+import React from 'react'
+import { t } from 'i18next'
 
 interface TrashModalProps {
   isOpen: boolean
@@ -45,7 +47,13 @@ export const TrashModal = ({
           >
             {/* هدر مودال */}
             <div className="flex justify-between items-center p-4 border-b border-border">
-              <h3 className="text-lg font-semibold">تب‌های حذف شده</h3>
+              <h3 className="text-lg font-semibold">
+                
+                {t('modals.trash.title')}
+                
+                 
+                 </h3>
+          
               <button onClick={onClose} className="p-1 rounded-full hover:bg-hover">
                 <CloseIcon className="w-5 h-5" />
               </button>
@@ -55,7 +63,7 @@ export const TrashModal = ({
             <div className="p-4 max-h-96 overflow-y-auto">
               {deletedTabs.length === 0 ? (
                 <p className="text-muted-foreground text-center">
-                  سطل زباله خالی است.
+              {t('modals.trash.empty')}
                 </p>
               ) : (
                 <ul className="space-y-2">
@@ -78,7 +86,7 @@ export const TrashModal = ({
                           className="text-sm p-0 h-auto"
                           onClick={() => onRestoreTab(tab.id)}
                         >
-                          بازیابی
+                    {t('common.restore')}
                         </Button>
                       </motion.li>
                     ))}

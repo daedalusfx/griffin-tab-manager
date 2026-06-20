@@ -2,6 +2,8 @@ import { Button } from '@/app/components/ui/button'
 import { SavedChart } from '@/app/hooks/useChartStore'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Edit2Icon, PlayCircleIcon, PlusIcon, Trash2Icon, XIcon } from 'lucide-react'
+import React from 'react'
+import { useTranslation } from 'react-i18next'
 
 interface ChartsListModalProps {
   isOpen: boolean
@@ -25,13 +27,15 @@ export const ChartsListModal = ({
   onDeleteChart,
   onAddNew,
 }: ChartsListModalProps) => {
+      const { t, i18n } = useTranslation();
+  
   return (
     <AnimatePresence>
       {isOpen && (
         <motion.div
           className="trash-modal-backdrop"
           variants={backdropVariants}
-          initial="hidden" // <-- کاما از اینجا حذف شد
+          initial="hidden" 
           animate="visible"
           exit="hidden"
           onClick={onClose}
@@ -43,7 +47,11 @@ export const ChartsListModal = ({
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center p-4 border-b border-border">
-              <h3 className="text-lg font-semibold">لیست چارت‌های ذخیره شده</h3>
+              <h3 className="text-lg font-semibold">
+                
+                {t('sidebar.chart_list')}
+                
+                </h3>
               <button
                 type="button"
                 onClick={onClose}
@@ -56,7 +64,7 @@ export const ChartsListModal = ({
             <div className="p-4 max-h-96 overflow-y-auto">
               {charts.length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">
-                  لیست چارت‌های شما خالی است.
+                  {t('sidebar.empty_list')}
                 </p>
               ) : (
                 <ul className="space-y-2">
@@ -82,7 +90,7 @@ export const ChartsListModal = ({
                             size="icon"
                             className="w-8 h-8 text-destructive/80 hover:text-destructive"
                             onClick={() => onDeleteChart(chart.id)}
-                            title="حذف از لیست"
+                            title={t('sidebar.delete_from_list')}
                           >
                             <Trash2Icon className="w-4 h-4" />
                           </Button>
@@ -91,7 +99,7 @@ export const ChartsListModal = ({
                             size="icon"
                             className="w-8 h-8"
                             onClick={() => onEditChart(chart)}
-                            title="ویرایش"
+                            title={t('sidebar.edit')}
                           >
                             <Edit2Icon className="w-4 h-4" />
                           </Button>
@@ -100,7 +108,7 @@ export const ChartsListModal = ({
                             size="icon"
                             className="w-8 h-8 text-green-500"
                             onClick={() => onOpenChart(chart.title, chart.url)}
-                            title="باز کردن در تب جدید"
+                            title={t('sidebar.open_in_new_tab')}
                           >
                             <PlayCircleIcon className="w-4 h-4" />
                           </Button>
@@ -120,7 +128,7 @@ export const ChartsListModal = ({
                 className="gap-1"
               >
                 <PlusIcon className="w-4 h-4" />
-                افزودن چارت جدید به لیست
+      {t('modals.chart_editor.add_title')}
               </Button>
             </div>
           </motion.div>

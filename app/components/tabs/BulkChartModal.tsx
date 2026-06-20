@@ -1,6 +1,7 @@
 import { Button } from '@/app/components/ui/button'
 import { parseUrlsToCharts } from '@/lib/utils'
 import { AnimatePresence, motion } from 'framer-motion'
+import { t } from 'i18next'
 import { XIcon } from 'lucide-react'
 import React, { FormEvent, useState } from 'react'
 
@@ -10,7 +11,6 @@ interface BulkChartModalProps {
   onSubmit: (charts: Array<{ title: string; url: string }>) => void
 }
 
-// --- داده‌های ثابت ---
 const SOURCES = ['OANDA', 'FX'] as const;
 const MAJOR_PAIRS = ['EURUSD', 'GBPUSD', 'USDJPY', 'USDCHF', 'AUDUSD', 'USDCAD', 'NZDUSD'];
 const MINOR_PAIRS = [
@@ -110,7 +110,9 @@ export const BulkChartModal = ({
               {/* Header */}
               <div className="flex justify-between items-center p-4 border-b border-border">
                 <div className="flex gap-4 items-center">
-                  <h3 className="text-lg font-semibold">افزودن گروهی</h3>
+                  <h3 className="text-lg font-semibold">
+                    {t('sidebar.add_bulk')}
+                  </h3>
                   {/* Mode Switcher Tabs */}
                   <div className="flex bg-muted rounded-md p-1">
                     <button
@@ -118,14 +120,14 @@ export const BulkChartModal = ({
                       onClick={() => setMode('auto')}
                       className={`px-3 py-1 text-xs rounded-sm transition-all ${mode === 'auto' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                     >
-                      تولید خودکار
+      {t('modals.bulk_add.auto_generate')}
                     </button>
                     <button
                       type="button"
                       onClick={() => setMode('manual')}
                       className={`px-3 py-1 text-xs rounded-sm transition-all ${mode === 'manual' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                     >
-                      دستی (URL)
+                      {t('modals.bulk_add.manual_url')}
                     </button>
                   </div>
                 </div>
@@ -140,7 +142,10 @@ export const BulkChartModal = ({
                   // --- MANUAL MODE ---
                   <div className="space-y-4">
                     <div>
-                      <label htmlFor="tab-urls" className="tab-label">لیست آدرس‌ها (URL)</label>
+                      <label htmlFor="tab-urls" className="tab-label">
+{t('modals.bulk_add.url_list')}
+
+                      </label>
                       <textarea
                         id="tab-urls"
                         value={urlList}
@@ -151,7 +156,7 @@ export const BulkChartModal = ({
                         autoFocus
                       />
                       <p className="text-xs text-muted-foreground mt-2">
-                        هر لینک در یک خط.
+                   {t('modals.bulk_add.url_hint')}
                       </p>
                     </div>
                   </div>
@@ -181,9 +186,11 @@ export const BulkChartModal = ({
                     {/* Majors Selection */}
                     <div>
                       <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium">جفت ارزهای ماژور (Majors)</span>
+                        <span className="text-sm font-medium">
+                          {t('modals.bulk_add.majors')}
+                          </span>
                         <Button type="button" variant="ghost" size="sm" className="h-6 text-xs" onClick={() => toggleAll(MAJOR_PAIRS)}>
-                          انتخاب همه
+                        {t('modals.bulk_add.select_all')}
                         </Button>
                       </div>
                       <div className="grid grid-cols-3 sm:grid-cols-4 gap-2" dir="ltr">
@@ -203,9 +210,11 @@ export const BulkChartModal = ({
                     {/* Minors Selection */}
                     <div>
                       <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium">جفت ارزهای مینور (Minors)</span>
+                        <span className="text-sm font-medium">
+                          {t('modals.bulk_add.minors')}
+                          </span>
                         <Button type="button" variant="ghost" size="sm" className="h-6 text-xs" onClick={() => toggleAll(MINOR_PAIRS)}>
-                          انتخاب همه
+                    {t('modals.bulk_add.select_all')}
                         </Button>
                       </div>
                       <div className="grid grid-cols-3 sm:grid-cols-4 gap-2" dir="ltr">
@@ -223,7 +232,8 @@ export const BulkChartModal = ({
                     </div>
                     
                     <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
-                      پیش‌نمایش لینک: <span dir="ltr" className="font-mono opacity-70">tradingview.com/chart/?symbol={selectedSource}%3AEURUSD</span>
+                    {t('modals.bulk_add.preview')}
+                      <span dir="ltr" className="font-mono opacity-70">tradingview.com/chart/?symbol={selectedSource}%3AEURUSD</span>
                     </div>
 
                   </div>
@@ -234,8 +244,8 @@ export const BulkChartModal = ({
               <div className="flex justify-end p-4 border-t border-border bg-background">
                 <Button type="submit" disabled={mode === 'auto' && selectedPairs.length === 0}>
                   {mode === 'manual' 
-                    ? `افزودن ${parseUrlsToCharts(urlList).length || ''} چارت`
-                    : `ساخت و افزودن ${selectedPairs.length} چارت`
+                    ? `add ${parseUrlsToCharts(urlList).length || ''} chart`
+                    : `${t('modals.bulk_add.build_and_add')} ${selectedPairs.length} chart`
                   }
                 </Button>
               </div>

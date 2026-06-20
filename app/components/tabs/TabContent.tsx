@@ -1,5 +1,7 @@
 import { Tab } from '@/app/hooks/useTabStore'
 import { AnimatePresence, motion } from 'framer-motion'
+import { t } from 'i18next'
+import React from 'react'
 // ایمپورت‌های useRef, useEffect, useLayoutEffect, useResizeObserver, useConveyor حذف شدند
 
 interface TabContentProps {
@@ -22,9 +24,12 @@ export const TabContent = ({ activeTabs, activeTabId }: TabContentProps) => {
       <AnimatePresence mode="wait">
         {activeTabs.length === 0 ? (
           <motion.div /* ... پیام خوش‌آمدگویی ... */ >
-            <h1 className="text-3xl font-bold">خوش آمدید!</h1>
+            <h1 className="text-3xl font-bold">
+              {t('tabs.welcome')}
+              
+              </h1>
             <p className="mt-4 text-muted-foreground">
-              از سایدبار کناری یک چارت را باز کنید یا چارت جدیدی اضافه کنید.
+        {t('tabs.welcome_desc')}
             </p>
           </motion.div>
         ) : (

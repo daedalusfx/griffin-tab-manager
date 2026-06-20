@@ -1,8 +1,9 @@
 import { motion } from 'framer-motion'
+import { t } from 'i18next'
 import { 
   XIcon, 
-  RefreshCwIcon, 
-  MoonIcon 
+  RefreshCwIcon,
+  MoonIcon, 
 } from 'lucide-react'
 import React, { useEffect, useRef } from 'react'
 
@@ -54,13 +55,13 @@ export const TabContextMenu = ({
               className="w-5 h-5 rounded-full hover:scale-110 transition-transform border border-background shadow-sm ring-1 ring-transparent hover:ring-ring"
               style={{ backgroundColor: color }}
               onClick={() => onSelectColor(color)}
-              title="تغییر رنگ"
+              title={t('context_menu.change_color')}
             />
           ))}
           <button
             className="w-5 h-5 rounded-full border border-dashed border-muted-foreground/70 flex items-center justify-center hover:bg-destructive/10 hover:border-destructive hover:text-destructive transition-colors"
             onClick={() => onSelectColor(null)}
-            title="حذف رنگ"
+            title={t('context_menu.remove_color')}
           >
             <XIcon className="w-3 h-3" />
           </button>
@@ -74,16 +75,20 @@ export const TabContextMenu = ({
           className="flex items-center gap-2 w-full px-2 py-2 text-sm text-foreground rounded hover:bg-accent hover:text-accent-foreground transition-colors text-right"
         >
           <RefreshCwIcon className="w-4 h-4 text-muted-foreground" />
-          <span>بارگذاری مجدد</span>
+          <span>
+            {t('context_menu.reload')}
+            </span>
         </button>
-{/* 
+
         <button
           onClick={() => onAction('hibernate')}
           className="flex items-center gap-2 w-full px-2 py-2 text-sm text-foreground rounded hover:bg-accent hover:text-accent-foreground transition-colors text-right group"
         >
           <MoonIcon className="w-4 h-4 text-muted-foreground group-hover:text-indigo-400 transition-colors" />
-          <span>به خواب رفتن (Hibernate)</span>
-        </button> */}
+          <span>
+            {t('context_menu.hibernate')}
+            </span>
+        </button>
       </div>
     </motion.div>
   )
