@@ -4,157 +4,170 @@ import { XIcon } from 'lucide-react'
 import React from 'react'
 import styled, { css } from 'styled-components'
 
-// --- تعریف Props ---
+// --- Props ---
 interface TabItemProps {
   tab: Tab
   isActive: boolean
   onSelect: (id: string) => void
   onClose: (id: string) => void
   onUpdateColor: (id: string, color: string | null) => void 
-  onOpenColorMenu: (props: { tabId: string; position: { x: number; y: number } }) => void 
+  onOpenColorMenu: (props: { tabId: string; position: { x: number; y: number } }) => void
 }
 
-// --- کامپوننت‌های استایل‌دار ---
+// --- Styled Components ---
+
+// ۱. نقطه رنگی مینیاتوری به جای خط کناری
+const ColorDot = styled.div<{ $color?: string, $isActive: boolean }>`
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  /* اگر رنگی ست نشده بود، برای تب فعال رنگ اصلی و برای غیرفعال خاکستری می‌گیره */
+  background-color: ${props => props.$color || (props.$isActive ? 'var(--foreground)' : 'var(--muted-foreground)')};
+  transition: all 0.3s ease;
+  /* افکت درخشش ملایم برای تب فعال که رنگ داره */
+  box-shadow: ${props => (props.$isActive && props.$color) ? `0 0 8px ${props.$color}80` : 'none'};
+`
+
+// ۲. محتوای پنهان‌شونده (متن و دکمه بستن)
+const ExpandedContent = styled.div`
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  /* حالت پیش‌فرض بسته است */
+  max-width: 0;
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+`
 
 const TabTitle = styled.span`
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 0.875rem; /* 14px */
-  line-height: 1.25rem;
-  
+  font-size: 0.8125rem; /* 13px - مناسب برای تب‌های فشرده */
+  line-height: 1.2;
+  flex: 1;
+  text-align: right;
 `
 
 const CloseButton = styled.button`
-  opacity: 0.7; 
-  border-radius: 6px;
+  opacity: 0.6; 
+  border-radius: 50%;
   flex-shrink: 0;
   background-color: transparent;
   border: none;
   cursor: pointer;
-  transition: all 0.15s ease;
-  line-height: 0; 
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-inline-start: 6px;
 
   & > svg {
-    width: 1rem; /* 16px */
-    height: 1rem; /* 16px */
+    width: 12px; 
+    height: 12px; 
     stroke: currentColor;
+    stroke-width: 2.5;
   }
 
   &:hover {
     opacity: 1;
-    background-color: rgba(0, 0, 0, 0.1); 
+    background-color: var(--destructive);
+    color: white;
   }
 `
 
-const StyledTabItem = styled(Reorder.Item)<{ $isActive: boolean ,$color?: string | any}>`
+// ۳. کانتینر اصلی تب (Pill)
+const StyledTabItem = styled(Reorder.Item)<{ $isActive: boolean }>`
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 1rem; 
+  padding: 6px;
+  border-radius: 9999px; /* شکل کپسولی کامل */
   cursor: pointer;
-  max-width: 16rem;
   flex-shrink: 0;
-  transition: all 0.2s ease;
-
-  /* استایل تخت و مستطیلی شبیه به عکس
-    بردرها و مارجین‌های قبلی حذف شدند 
-  */
-  border: none;
-  border-radius: 0;
-  margin: 0;
+  background-color: transparent;
+  border: 1px solid transparent;
+  transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  margin: 0 4px;
+  user-select: none;
   
-  /* یک جداکننده ظریف بین تب‌ها */
-  border-right: 1px solid rgba(255, 255, 255, 0.05);
-   /* یا border-left برای RTL */
-  
-  border-left: 4px solid transparent;
-  ${(props) =>
-    props.$color &&
-    css`
-      border-left-color: ${props.$color};
-      /* پدینگ داخلی رو تنظیم می‌کنیم تا متن از نوار رنگی فاصله بگیره */
-      padding-left: calc(1rem - 4px); 
-    `}
-  /* --- استایل بر اساس Prop --- */
-
-  /* ۱. استایل تب غیرفعال */
-  ${(props) =>
-    !props.$isActive &&
-    css`
-      /* رنگ متن روشن‌تر (شبیه عکس) */
-      color: var(--muted-foreground); 
-      /* پس‌زمینه تیره (همرنگ نوار تب) */
-      background-color: transparent; 
-
-      &:hover {
-        /* در هاور کمی روشن‌تر می‌شود */
-        background-color: var(--window-c-hover, var(--accent));
-        color: var(--foreground);
-      }
-    `}
-
-  /* ۲. استایل تب فعال (شبیه عکس) */
-  ${(props) =>
-    props.$isActive &&
-    css`
-      background-color: #f59e0b;
-      color: #1e293b; /* Tailwind Slate 800 */
-      font-weight: 500;
-
-      ${CloseButton} {
-        opacity: 0.8;
-      }
-      ${CloseButton}:hover {
+  /* --- استایل تب غیرفعال --- */
+  ${props => !props.$isActive && css`
+    color: var(--muted-foreground);
+    
+    /* باز شدن کشویی موقع هاور */
+    &:hover {
+      background-color: var(--accent);
+      padding: 6px 12px 6px 10px;
+      
+      ${ExpandedContent} {
+        max-width: 160px; /* فضای کافی برای متن و دکمه */
         opacity: 1;
-        background-color: rgba(0, 0, 0, 0.15);
+        margin-inline-start: 8px;
       }
-    `}
+    }
+  `}
+
+  /* --- استایل تب فعال --- */
+  ${props => props.$isActive && css`
+    background-color: var(--background);
+    color: var(--foreground);
+    border-color: var(--border);
+    padding: 6px 12px 6px 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    font-weight: 500;
+    
+    /* تب فعال همیشه باز است */
+    ${ExpandedContent} {
+      max-width: 160px;
+      opacity: 1;
+      margin-inline-start: 8px;
+    }
+  `}
 `
 
-// --- کامپوننت اصلی ---
-
-export const TabItem = ({ tab, isActive, onSelect, onClose,onUpdateColor,onOpenColorMenu }: TabItemProps) => {
+// --- Component ---
+export const TabItem = ({ tab, isActive, onSelect, onClose, onUpdateColor, onOpenColorMenu }: TabItemProps) => {
   const y = useMotionValue(0)
 
-
+  // مدیریت کلیک راست برای تغییر رنگ
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    // --- به جای استیت محلی، تابع والد رو صدا بزن ---
     onOpenColorMenu({ tabId: tab.id, position: { x: e.clientX, y: e.clientY } })
   }
 
   return (
-    <>
     <StyledTabItem
       $isActive={isActive}
       value={tab}
-      $color={tab.color} 
       id={tab.id}
       style={{ y }}
       onClick={() => onSelect(tab.id)}
-      onContextMenu={handleContextMenu} 
-      
-      layout
-      exit={{ opacity: 0, transition: { duration: 0.15 } }}
+      onContextMenu={handleContextMenu}
+      layout // قابلیت فوق‌العاده Framer برای جابجایی نرم
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.15 } }}
     >
-     <div style={{display:'flex',width:'100%',flexDirection:'row',
-      justifyContent:'space-between',gap:'20px',alignItems:'center'}}>
-     <TabTitle title={tab.title}>
-        {tab.title}
-      </TabTitle>
-      <CloseButton
-        onClick={(e) => {
-          e.stopPropagation() // جلوگیری از فعال شدن تب هنگام بستن
-          onClose(tab.id)
-        }}
-      >
-        <XIcon />
-      </CloseButton>
-
-     </div>
+      <ColorDot $color={tab.color} $isActive={isActive} />
+      
+      <ExpandedContent>
+        <TabTitle title={tab.title}>
+          {tab.title}
+        </TabTitle>
+        <CloseButton
+          onClick={(e) => {
+            e.stopPropagation() // جلوگیری از سلکت شدن تب هنگام بستن
+            onClose(tab.id)
+          }}
+          title="بستن"
+        >
+          <XIcon />
+        </CloseButton>
+      </ExpandedContent>
     </StyledTabItem>
-    </>
   )
 }
