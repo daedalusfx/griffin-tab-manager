@@ -21,6 +21,7 @@ import { TabBar } from './TabBar'
 import { TabContent } from './TabContent'
 import { TrashModal } from './TrashModal'
 import { t } from 'i18next'
+import { ChartPickModal } from './ChartPickModal'
 
 // --- ثابت‌ها ---
 const BOUNDS_DEBOUNCE_MS = 350
@@ -42,6 +43,8 @@ export const TabManager = () => {
   const inactivityTimeoutMinutes = useTabStore((state) => state.inactivityTimeoutMinutes)
   const isMultiViewOpen = useTabStore((state) => state.isMultiViewOpen)
   const toggleMultiView = useTabStore((state) => state.toggleMultiView)
+
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
   // --- هوک‌های IPC ---
   // توجه: viewSetBounds حالا دو آرگومان می‌گیرد
@@ -101,34 +104,36 @@ export const TabManager = () => {
     }
   }, [])
   
-  // --- مدیریت Lazy Views ---
+
+  // --- Lazy Views ---
   useEffect(() => {
     const shouldHideMainView =
       isTrashModalOpen ||
       isChartEditorModalOpen ||
       !!colorMenuProps ||
       isBulkAddModalOpen ||
-      isMultiViewOpen
+      isMultiViewOpen ||
+      isCommandPaletteOpen; 
 
     if (shouldHideMainView || !activeTabId) {
-      viewSetActive(null)
-      return
+      viewSetActive(null);
+      return;
     }
 
-    const currentTab = activeTabs.find((t) => t.id === activeTabId)
+    const currentTab = activeTabs.find((t) => t.id === activeTabId);
 
     if (
       currentTab && 
       currentTab.type !== 'multiview' && 
-      currentTab.type !== 'settings' 
+      currentTab.type !== 'settings'
     ) {
       const loadView = async () => {
-        await viewCreate(currentTab.id, currentTab.url)
-        await viewSetActive(currentTab.id)
-      }
-      loadView()
+        await viewCreate(currentTab.id, currentTab.url);
+        await viewSetActive(currentTab.id);
+      };
+      loadView();
     } else {
-      viewSetActive(null)
+      viewSetActive(null);
     }
   }, [
     activeTabId,
@@ -138,9 +143,32 @@ export const TabManager = () => {
     colorMenuProps,
     isBulkAddModalOpen,
     isMultiViewOpen,
+    isCommandPaletteOpen, 
     viewCreate,
     viewSetActive,
-  ])
+  ]);
+
+
+  // لیسنر برای کلیدهای Ctrl+K یا Cmd+K
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // پشتیبانی از ویندوز (ctrlKey) و مک (metaKey)
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault(); // جلوگیری از رفتار دیفالت مرورگر (سرچ گوگل)
+        setIsCommandPaletteOpen((prev) => !prev);
+      }
+    };
+
+    document.addEventListener('keydown', handleGlobalKeyDown);
+    return () => document.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
+
+
+  // هندلر برای زمانی که یک تب از پالت انتخاب میشه
+  const handleSelectTabFromPalette = (tabId: string) => {
+    setActiveTabId(tabId);
+    setIsCommandPaletteOpen(false);
+  };
 
   // --- مدیریت ابعاد (Bounds) ---
   const sendBounds = useCallback(() => {
@@ -308,6 +336,7 @@ export const TabManager = () => {
           isMultiViewActive={isMultiViewOpen}
           onOpenMultiView={handleOpenMultiView}
           onOpenSettings={handleOpenSettings}
+          onOpenSearch={() => setIsCommandPaletteOpen(true)}
         />
 
         <div className="tab-content-wrapper" ref={contentWrapperRef}>
@@ -352,6 +381,15 @@ export const TabManager = () => {
           onAction={handleContextMenuAction} 
         />
       )}
+
+
+      <ChartPickModal
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        tabs={activeTabs}
+        onSelect={handleSelectTabFromPalette}
+        currentTabId={activeTabId || ''}
+      />
     </div>
   )
 }

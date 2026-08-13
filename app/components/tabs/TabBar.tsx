@@ -1,6 +1,6 @@
 import { Tab } from '@/app/hooks/useTabStore';
 import { AnimatePresence, motion, Reorder } from 'framer-motion';
-import { LayoutDashboard, ListIcon, PaintBucketIcon, Settings, TrashIcon } from 'lucide-react';
+import { LayoutDashboard, ListIcon, PaintBucketIcon, Settings, TrashIcon, SearchIcon } from 'lucide-react';
 import React from 'react';
 import { TabItem } from './TabItem';
 import { useTranslation } from 'react-i18next';
@@ -20,7 +20,8 @@ interface TabBarProps {
   onSortTabs: () => void
   onToggleMultiView: () => void
   onOpenMultiView: () => void
-  onOpenSettings: () => void 
+  onOpenSettings: () => void
+  onOpenSearch: () => void 
 }
 
 export const TabBar = ({
@@ -32,17 +33,17 @@ export const TabBar = ({
   onOpenTrash,
   onOpenChartList,
   trashCount,
-onUpdateTabColor,
-onOpenColorMenu,
-onSortTabs,
-onToggleMultiView,
-isMultiViewActive,
-onOpenMultiView,
-onOpenSettings
+  onUpdateTabColor,
+  onOpenColorMenu,
+  onSortTabs,
+  onToggleMultiView,
+  isMultiViewActive,
+  onOpenMultiView,
+  onOpenSettings,
+  onOpenSearch 
 }: TabBarProps) => {
+  const { t, i18n } = useTranslation();
 
-    const { t, i18n } = useTranslation();
-  
   return (
     <header className="tab-header">
       <nav className="tab-bar-nav">
@@ -71,7 +72,22 @@ onOpenSettings
         </Reorder.Group>
       </nav>
 
-      <div className="tab-controls">
+      <div className="tab-controls flex items-center gap-1">
+        
+        {/* نوار جستجوی جدید */}
+        <button
+          className="flex items-center gap-2 bg-input/40 hover:bg-input border border-border text-muted-foreground px-3 py-1.5 rounded-md text-xs transition-colors mx-2 ml-4 cursor-pointer"
+          onClick={onOpenSearch}
+          title="جستجوی چارت (Ctrl+K)"
+        >
+          <SearchIcon className="w-4 h-4" />
+          <span className="hidden sm:inline">جستجو...</span>
+          <kbd className="hidden md:inline-block font-mono bg-background/50 px-1.5 rounded border border-border/50 text-[10px] mr-2 text-muted-foreground/80" dir="ltr">
+            Ctrl+K
+          </kbd>
+        </button>
+        {/* پایان نوار جستجو */}
+
         <button
           id="chart-list-btn"
           className="tab-icon-btn"
@@ -80,23 +96,21 @@ onOpenSettings
         >
           <ListIcon className="w-5 h-5" />
         </button>
-
         <button
           className="tab-icon-btn"
           title={t('tab_bar.sort_by_color')}
-                    onClick={onSortTabs}
+          onClick={onSortTabs}
         >
           <PaintBucketIcon className="w-5 h-5" />
         </button>
         <button
-  className="tab-icon-btn"
-  title={t('tab_bar.open_multiview')}
-  onClick={onOpenMultiView}
->
-  <LayoutDashboard className="w-5 h-5" />
-</button>
-
-<button
+          className="tab-icon-btn"
+          title={t('tab_bar.open_multiview')}
+          onClick={onOpenMultiView}
+        >
+          <LayoutDashboard className="w-5 h-5" />
+        </button>
+        <button
           className="tab-icon-btn"
           title={t('tab_bar.settings')}
           onClick={onOpenSettings}
@@ -125,5 +139,5 @@ onOpenSettings
         </button>
       </div>
     </header>
-  )
-}
+  );
+};
